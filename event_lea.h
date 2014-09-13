@@ -15,6 +15,13 @@
 #define INIT_EPEV 32
 #define EVLIST_LEN 4096
 #define EPEV_MAX EVLIST_LEN
+
+
+#define LV_FDRD (0x0000001)
+#define LV_FDWD (0x0000002)
+#define INF (NULL)
+#define NULL_ARG (NULL)
+//#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
 typedef struct timespec 
@@ -30,6 +37,7 @@ typedef int res_t;
     int error;
     int correct;
 } res_t;*/
+typedef int to_t;
 
 typedef int flag_t;
 typedef struct event {
@@ -42,12 +50,12 @@ typedef struct event {
 
 typedef struct evlist {
     int       event_len;
-    event_t **eventarray;
+    event_t  *eventarray[];
 } readylist_t, activelist_t, evlist_t;
 
 typedef struct base {
 //active event list and its number
-    activelist_t        activelist;//ref?
+    activelist_t        activelist;//ref? //TODO: certain binary tree?
 //eventlist list and its number
     readylist_t         readylist;
 //epoll functions need it.
@@ -58,7 +66,10 @@ typedef struct base {
 } base_t;
 
 lt_time_t lt_gettime(void);
-int lt_time_a_sub_b(lt_time_t a, lt_time_t b);
+int       lt_time_a_sub_b(lt_time_t a, lt_time_t b);
+base_t*   lt_base_init(void);
+res_t     lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t *timeout);
+res_t     lt_base_loop(base_t *base, int timeout);
 #define time_a_gt_b(X) (X)
 /*
 //initialize a base

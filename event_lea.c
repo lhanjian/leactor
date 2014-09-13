@@ -96,6 +96,7 @@ lt_io_ctr(evlist_t *evlist)
 
     return 0;
 }
+
 //evlist belongs to base, but it can make evlist_t opaque,
 //so pass the evlist to this routine
 static res_t
@@ -121,28 +122,28 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
 
 //initialize a base
 base_t *
-lt_base_init()
+lt_base_init(void)
 {
     res_t res;
 //alloc a memory for a new base 
     base_t *base = realloc(NULL, sizeof(base_t));
     if (!base) {
         err_realloc(base);//TODO
-        return -1;
+        return NULL;
     }
 
 //epoll create a epfd , then copy it to base
     int epfd = epoll_create1(EPOLL_CLOEXEC);
     if (epfd == -1) {
 		fprintf(stderr, "epoll_create1\n");
-        free(base, NULL);//TODO
-        return -1
+        free(base);//TODO
+        return NULL;
     }
 
     base->epfd = epfd;
 
 //init base set
-    res = base_init_set(base_t *base);
+    res = base_init_set(base);
 //init epoll_event
 /*	base->epevent = malloc(N*sizeof(struct epoll_event));
 	if (!base->epevent) {
@@ -162,7 +163,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 {
 
 	event_t *event = malloc(sizeof(event_t));
-    res_t    res = lt_add_to_evlist(event, base->readylist, 
+    res_t    res = lt_add_to_evlist(event, &base->readylist, 
 			base, flag_set, fd, callback, arg);
 	
 	if (timeout)
@@ -191,8 +192,8 @@ lt_ev_process_and_moveout(evlist_t *evlist)
 static inline void
 lt_base_init_actlist(base_t *base, int ready)
 {
-	evlist_t *actlist = base->activelist;
-	evlist_t *readylist = base->readylist;
+	evlist_t *actlist = &base->activelist;
+	evlist_t *readylist = &base->readylist;
 //TODO
 //memset
 	for (int i = 0; i < ready; i++) {
@@ -216,8 +217,8 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 		now = lt_gettime();
 
 		//core dispatch
-        ready = epoll_wait(base->epfd, &base.epevent, 
-				base->readylist->event_len, base->eptimeout);
+        ready = epoll_wait(base->epfd, &base->epevent, 
+				base->readylist.event_len, base->eptimeout);
         if (ready == -1) {
 			perror("epoll_wait");
             return -1;
@@ -232,7 +233,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
         
 		lt_base_init_actlist(base, ready);//should init ,but not only insert ready to action.
 
-        lt_ev_process_and_moveout(base->activelist);
+        lt_ev_process_and_moveout(&base->activelist);
     }
 
     return 0;
@@ -269,4 +270,20 @@ lt_base_free(base_t *base)
 	free(base);
 }
 
+static inline void
+lt_base_free(evlist_t *list)
+{
+    free(list->eventarray);
+}
+
 //remove event
+res_t
+lt_remove_from_evlist(event_t *ev, evlist_t *evlist)
+{
+}
+
+res_t
+lt_io_remove(base_t *base, event_t *ev)
+{
+
+}
