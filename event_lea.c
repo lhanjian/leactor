@@ -231,11 +231,23 @@ lt_base_loop(base_t *base, lt_time_t timeout)
 /*ToDo001 timeout to limit dispatch time?*/
 
 //gettime
+
 lt_time_t
 lt_gettime()
 {
-	//TODO
-	return lt_time_t;
+	//TODO doing
+    
+    int rv;
+
+    struct timespec time_now;
+
+    rv = clock_gettime(CLOCK_MONOTONIC_RAW, time_now);
+
+    if (rv == -1) {
+        perror("gettime error");
+    }
+
+	return time_now;
 }
 
 //remove base

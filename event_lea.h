@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <time.h>
 //system independence
 #include <sys/epoll.h>
 #define MAX_ACTIVE
@@ -16,27 +17,32 @@
 #define EPEV_MAX EVLIST_LEN
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
+typedef struct timespec 
+                  lt_time_t;
 typedef int       numlist_t;
 typedef int       epfd_t;
 typedef numlist_t numactlist_t;
 typedef numlist_t numreadylist_t;
 typedef int (*func_t)(int fd, void *arg);
 
+typedef int res_t;
 /*typedef union {
     int error;
     int correct;
 } res_t;*/
-typedef struct evlist {
-    int       event_len;
-    event_t **eventarray;
-} readylist_t, activelist_t, evlist_t;
 
+typedef int flag_t;
 typedef struct event {
     func_t  callback;
     void   *arg;
     flag_t  flag;
     int     fd;
 } event_t;
+
+typedef struct evlist {
+    int       event_len;
+    event_t **eventarray;
+} readylist_t, activelist_t, evlist_t;
 
 typedef struct base {
 //active event list and its number
