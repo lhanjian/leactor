@@ -37,6 +37,7 @@ typedef struct event {
     void   *arg;
     flag_t  flag;
     int     fd;
+//    int     epfd;
 } event_t;
 
 typedef struct evlist {
@@ -46,16 +47,19 @@ typedef struct evlist {
 
 typedef struct base {
 //active event list and its number
-    activelist_t       *activelist;
+    activelist_t        activelist;//ref?
 //eventlist list and its number
-    readylist_t        *readylist;
+    readylist_t         readylist;
 //epoll functions need it.
-    epfd_t              epfd; 
-    struct epoll_event *epevent;
-    struct timeval      eptimeout;
+    int                 epfd; 
+    struct epoll_event  epevent;
+    int                 eptimeout;
 	lt_time_t           now;
-    
 } base_t;
+
+lt_time_t lt_gettime(void);
+int lt_time_a_sub_b(lt_time_t a, lt_time_t b);
+#define time_a_gt_b(X) (X)
 /*
 //initialize a base
 res_t base_init(base_t *base_null);

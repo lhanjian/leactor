@@ -5,14 +5,15 @@
 #include "event_lea.h"
 
 static int
-lt_alloc_evlist(evlist_t **evlist)
+lt_alloc_evlist(evlist_t *evlist)
 {
-	*evlist = realloc(NULL, sizeof(evlist_t));
+	/*evlist = realloc(NULL, sizeof(evlist_t));
 	if (!(*evlist)) {
 		perror("realloc");
 		return -1;
 	}
-	**evlist = (void *)0;
+    */
+	evlist->event_len = 0;
 	return 0;
 }
 
@@ -22,30 +23,32 @@ lt_base_init_set(base_t *base)
 	if (lt_alloc_evlist(&base->readylist) == -1)
 		return -1;
 	if (lt_alloc_evlist(&base->activelist) == -1) {
-		free(activelist);
+		free(&base->activelist);
 		return -1;
 	}
 
-    base->readylist->event_len = 0;
-    base->activelist->event_len = 0;
+    base->readylist.event_len = 0;
+    base->activelist.event_len = 0;
 
     return 0;
 }
 
 res_t
-lt_add_to_epfd(base_t *base, int mon_fd, flag_t flag)
+lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 {
     res_t res;
-    struct epoll_event *ep_event = &base->ep_event;
+//    int events;
+    struct epoll_event ev;//
 
-    events = 0;
+    ev.events = 0;
     if (flag & LV_FDRD)
-        ep_event.events |= EPOLLIN;
+        ev.events |= EPOLLIN;
     if (flag & LV_FDWR)
-        ep_event.events |= EPOLLOUT;
-    ep_event_events |= EPOLLET;
+        ev.events |= EPOLLOUT;
+    ev.events |= EPOLLET;
+    ev.data.ptr = event;
     
-    res = epoll_ctl(base->epfd, EPOLL_CTL_ADD, mon_fd, &ep_event);
+    res = epoll_ctl(epfd, EPOLL_CTL_ADD, mon_fd, &ev);
 	if(res) {
 		perror("epoll_ctl");
 		return res;
@@ -56,11 +59,11 @@ lt_add_to_epfd(base_t *base, int mon_fd, flag_t flag)
 
 static res_t
 lt_ev_ctr(event_t *event, 
-        flag_t flag_set, int fd, 
+        flag_t flag_set, int fd, //int epfd,
         func_t callback, void *arg)
 {
     event = realloc(NULL, sizeof(event_t));
-    if (event == -1) {
+    if (event == NULL) {
         err_realloc(event);
         return -1;
     }
@@ -69,6 +72,7 @@ lt_ev_ctr(event_t *event,
     event->arg = arg;
     event->flag = flag_set;
     event->fd = fd;
+//    event->epfd = epfd;
 
     return 0;
 }
@@ -77,13 +81,13 @@ static inline res_t
 lt_io_ctr(evlist_t *evlist)
 {
 	if (!evlist) {
-		if (lt_alloc_evlist(&evlist) == -1)
+		if (lt_alloc_evlist(evlist) == -1)
 			return -1;
 	}
     if (!evlist->event_len || evlist->event_len == EVLIST_LEN) {
         evlist->eventarray = realloc(evlist->eventarray,
-                sizeof(*eventarray)*(evlist->event_len>>2));
-        if (evlist == -1) {
+                (sizeof(event_t)) *(evlist->event_len>>2));
+        if (evlist == NULL) {
 			perror("realloc");
             return -1;
         }
@@ -96,7 +100,7 @@ lt_io_ctr(evlist_t *evlist)
 //so pass the evlist to this routine
 static res_t
 lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base, 
-    flag_t flag_set, int fd, func_t callback, (void *)arg)
+    flag_t flag_set, int fd, func_t callback, void *arg)
 {
     res_t res;
 
@@ -104,11 +108,11 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
     if (res)
         return res;
 
-    res = io_ctr(evlist);
+    res = lt_io_ctr(evlist);
     if (res)
         return res;
 
-    evlist->eventarray[event_len] = event;
+    evlist->eventarray[evlist->event_len] = event;
     ++evlist->event_len;
 
     return res;
@@ -123,27 +127,29 @@ lt_base_init()
 //alloc a memory for a new base 
     base_t *base = realloc(NULL, sizeof(base_t));
     if (!base) {
-        err_realloc(base_init);
+        err_realloc(base);//TODO
         return -1;
     }
 
 //epoll create a epfd , then copy it to base
-    epfd_t epfd = epoll_create1(EPOLL_CLOEXEC);
-    if (base == -1) {
+    int epfd = epoll_create1(EPOLL_CLOEXEC);
+    if (epfd == -1) {
 		fprintf(stderr, "epoll_create1\n");
-        free(base_init, NULL);
+        free(base, NULL);//TODO
         return -1
     }
+
     base->epfd = epfd;
 
 //init base set
     res = base_init_set(base_t *base);
 //init epoll_event
-	base->epevent = malloc(N*sizeof(struct epoll_event));
+/*	base->epevent = malloc(N*sizeof(struct epoll_event));
 	if (!base->epevent) {
 		fprintf(stderr, "malloc\n");
 		return -1;
 	}
+    */
 
     return base;
 }
@@ -162,7 +168,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 	if (timeout)
 		lt_timeout_add(timeout);
     
-    res = lt_add_to_epfd(base, fd, flag_set);
+    res = lt_add_to_epfd(base->epfd, event, fd, flag_set);
 
     return res;
 }
@@ -181,12 +187,14 @@ lt_ev_process_and_moveout(evlist_t *evlist)
         --evlist->event_len;
     }
 }
+
 static inline void
 lt_base_init_actlist(base_t *base, int ready)
 {
 	evlist_t *actlist = base->activelist;
 	evlist_t *readylist = base->readylist;
 //TODO
+//memset
 	for (int i = 0; i < ready; i++) {
 		actlist->eventarray[i] = 
 			readylist->eventarray[i];
@@ -195,10 +203,11 @@ lt_base_init_actlist(base_t *base, int ready)
 }
 //core dispatch
 res_t 
-lt_base_loop(base_t *base, lt_time_t timeout)
+lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 {
 	lt_time_t now;
 
+    int diff;
     int i;
     int ready;
 
@@ -207,16 +216,16 @@ lt_base_loop(base_t *base, lt_time_t timeout)
 		now = lt_gettime();
 
 		//core dispatch
-        ready = epoll_wait(base->epfd, base->epevent, 
-				base->readylist.event_len, base->eptimeout);
+        ready = epoll_wait(base->epfd, &base.epevent, 
+				base->readylist->event_len, base->eptimeout);
         if (ready == -1) {
 			perror("epoll_wait");
             return -1;
         }
 
 		//calc time cosumed
-		now = lt_time_a_sub_b(lt_gettime(), now);
-		if (time_a_gt_b(now > timeout)) {
+		diff = lt_time_a_sub_b(lt_gettime(), now);
+		if (time_a_gt_b(diff > timeout)) {
 			fprintf(stderr, "loop expired\n");
 			break;
 		}
@@ -235,13 +244,13 @@ lt_base_loop(base_t *base, lt_time_t timeout)
 lt_time_t
 lt_gettime()
 {
-	//TODO doing
+	//TODO done?
     
     int rv;
 
-    struct timespec time_now;
+    lt_time_t time_now;
 
-    rv = clock_gettime(CLOCK_MONOTONIC_RAW, time_now);
+    rv = clock_gettime(CLOCK_MONOTONIC_RAW, &time_now);
 
     if (rv == -1) {
         perror("gettime error");
