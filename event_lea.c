@@ -156,7 +156,9 @@ lt_base_init(void)
 }
     
 
-//push a io event to base
+//push a io event to base_t
+//POSITION 
+//evlist using TCP-like buffer window？
 res_t 
 lt_io_add(base_t *base, int fd, flag_t flag_set,
         func_t callback, void *arg, to_t *timeout)
@@ -283,7 +285,7 @@ lt_remove_from_evlist(event_t *ev, evlist_t *evlist)
 }
 
 res_t
-lt_io_remove(base_t *base, event_t *ev)
+lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
 
 }
