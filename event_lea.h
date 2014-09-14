@@ -49,8 +49,8 @@ typedef struct event {
 } event_t;
 typedef struct evlist {
     int             event_len;
-    event_t        *eventarray[];
-    struct evlist  hole_list;
+    struct evlist   hole_list;
+    event_t       **eventarray;
 } readylist_t, activelist_t, evlist_t;
 
 typedef struct base {
@@ -63,7 +63,7 @@ typedef struct base {
     struct epoll_event  epevent;
     int                 eptimeout;
 	lt_time_t           now;
-    int                 readylist_pos;
+//    int                 readylist_pos;
 } base_t;
 
 lt_time_t lt_gettime(void);
@@ -71,8 +71,8 @@ int       lt_time_a_sub_b(lt_time_t a, lt_time_t b);
 base_t*   lt_base_init(void);
 res_t     lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t *timeout);
 res_t     lt_base_loop(base_t *base, int timeout);
-
-void      lt_base_free_evlist(evlist_t *list);
+res_t     lt_timeout_add(to_t *to);
+void      lt_free_evlist(evlist_t *list);
 #define time_a_gt_b(X) (X)
 /*
 //initialize a base

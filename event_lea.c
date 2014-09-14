@@ -34,7 +34,7 @@ lt_base_init_set(base_t *base)
 }
 
 res_t
-lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)/
+lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 {
     res_t res;
 //    int events;
@@ -134,7 +134,7 @@ lt_base_init(void)
 //alloc a memory for a new base 
     base_t *base = realloc(NULL, sizeof(base_t));
     if (!base) {
-        err_realloc(base);//TODO
+//        err_realloc(base);//TODO
         return NULL;
     }
 
@@ -268,6 +268,11 @@ lt_gettime()
 	return time_now;
 }
 
+void
+lt_free_evlist(evlist_t *list)
+{
+    free(list->eventarray);
+}
 //remove base
 void
 lt_base_free(base_t *base)
@@ -278,27 +283,21 @@ lt_base_free(base_t *base)
 	free(base);
 }
 
-void
-lt_free_evlist(evlist_t *list)
-{
-    free(list->eventarray);
-}
 
 //remove event
 res_t
 lt_remove_from_evlist(event_t *ev, evlist_t *evlist)
 {
+    evlist->hole_list->eventarray[evlist->hole_list.event_len] = ev;
+    evlist->hole_list.event_len++;
 
 }
 
-res_t
+void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
-
+    lt_remove_from_evlist(ev, base->readylist);
+    free(ev);
+    //TODO readylist is too long?
 }
 
-res_t
-lt_timeout_add(to_t *timeout)
-{
-
-}
