@@ -113,8 +113,14 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
     if (res)
         return res;
 
-    evlist->eventarray[evlist->event_len] = event;
-    ++evlist->event_len;
+    
+    if (!evlist->hole_list.event_len) {
+        evlist->eventarray[evlist->event_len] = event;
+        ++evlist->event_len;
+    } else {
+        evlist->hole_list.eventarray[evlist->hole_list.event_len - 1];
+        evlist->hole_list.event_len--;
+    }
 
     return res;
 }
@@ -272,8 +278,8 @@ lt_base_free(base_t *base)
 	free(base);
 }
 
-static inline void
-lt_base_free(evlist_t *list)
+void
+lt_base_free_evlist(evlist_t *list)
 {
     free(list->eventarray);
 }
@@ -282,6 +288,7 @@ lt_base_free(evlist_t *list)
 res_t
 lt_remove_from_evlist(event_t *ev, evlist_t *evlist)
 {
+
 }
 
 res_t
