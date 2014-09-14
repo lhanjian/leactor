@@ -18,7 +18,7 @@
 
 
 #define LV_FDRD (0x0000001)
-#define LV_FDWD (0x0000002)
+#define LV_FDWR (0x0000002)
 #define INF (NULL)
 #define NULL_ARG (NULL)
 //#define 
@@ -47,11 +47,10 @@ typedef struct event {
     int     fd;
 //    int     epfd;
 } event_t;
-
 typedef struct evlist {
     int             event_len;
     event_t        *eventarray[];
-    struct evlist   hole_list;
+    struct evlist  hole_list;
 } readylist_t, activelist_t, evlist_t;
 
 typedef struct base {
@@ -64,6 +63,7 @@ typedef struct base {
     struct epoll_event  epevent;
     int                 eptimeout;
 	lt_time_t           now;
+    int                 readylist_pos;
 } base_t;
 
 lt_time_t lt_gettime(void);

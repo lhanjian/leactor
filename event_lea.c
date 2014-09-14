@@ -34,7 +34,7 @@ lt_base_init_set(base_t *base)
 }
 
 res_t
-lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
+lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)/
 {
     res_t res;
 //    int events;
@@ -64,7 +64,7 @@ lt_ev_ctr(event_t *event,
 {
     event = realloc(NULL, sizeof(event_t));
     if (event == NULL) {
-        err_realloc(event);
+    //    err_realloc(event);
         return -1;
     }
 
@@ -118,7 +118,7 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
         evlist->eventarray[evlist->event_len] = event;
         ++evlist->event_len;
     } else {
-        evlist->hole_list.eventarray[evlist->hole_list.event_len - 1];
+        evlist->hole_list.eventarray[evlist->hole_list.event_len - 1] = event;
         evlist->hole_list.event_len--;
     }
 
@@ -149,7 +149,7 @@ lt_base_init(void)
     base->epfd = epfd;
 
 //init base set
-    res = base_init_set(base);
+    res = lt_base_init_set(base);
 //init epoll_event
 /*	base->epevent = malloc(N*sizeof(struct epoll_event));
 	if (!base->epevent) {
@@ -182,7 +182,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
     return res;
 }
 
-static//res_t
+static void//res_t
 lt_ev_process_and_moveout(evlist_t *evlist)
 {
     int len = evlist->event_len;
@@ -201,12 +201,12 @@ static inline void
 lt_base_init_actlist(base_t *base, int ready)
 {
 	evlist_t *actlist = &base->activelist;
-	evlist_t *readylist = &base->readylist;
+//	evlist_t *readylist = &base->readylist;
 //TODO
 //memset
 	for (int i = 0; i < ready; i++) {
-		actlist->eventarray[i] = 
-			readylist->eventarray[i];
+		actlist->eventarray[i] = base->epevent[i].data.ptr;
+//			readylist->eventarray[i];
 	}
 	actlist->event_len = ready;
 }
@@ -279,7 +279,7 @@ lt_base_free(base_t *base)
 }
 
 void
-lt_base_free_evlist(evlist_t *list)
+lt_free_evlist(evlist_t *list)
 {
     free(list->eventarray);
 }
@@ -293,6 +293,12 @@ lt_remove_from_evlist(event_t *ev, evlist_t *evlist)
 
 res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
+{
+
+}
+
+res_t
+lt_timeout_add(to_t *timeout)
 {
 
 }
