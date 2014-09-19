@@ -19,7 +19,7 @@
 
 #define LV_FDRD (0x0000001)
 #define LV_FDWR (0x0000002)
-#define INF (NULL)
+#define INF (0)
 #define NULL_ARG (NULL)
 //#define 
 //static funtion didn't dispatch return value;
@@ -45,11 +45,13 @@ typedef struct event {
     void   *arg;
     flag_t  flag;
     int     fd;
+    to_t    time;
 //    int     epfd;
 } event_t;
+
 typedef struct evlist {
     int             event_len;
-    struct evlist   hole_list;
+    struct evlist  *hole_list;
     event_t       **eventarray;
 } readylist_t, activelist_t, evlist_t;
 
@@ -60,7 +62,7 @@ typedef struct base {
     readylist_t         readylist;
 //epoll functions need it.
     int                 epfd; 
-    struct epoll_event  epevent;
+    struct epoll_event  *epevent;
     int                 eptimeout;
 	lt_time_t           now;
 //    int                 readylist_pos;
@@ -69,10 +71,11 @@ typedef struct base {
 lt_time_t lt_gettime(void);
 int       lt_time_a_sub_b(lt_time_t a, lt_time_t b);
 base_t*   lt_base_init(void);
-res_t     lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t *timeout);
+res_t     lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 res_t     lt_base_loop(base_t *base, int timeout);
-res_t     lt_timeout_add(to_t *to);
+res_t     lt_timeout_add(to_t to);
 void      lt_free_evlist(evlist_t *list);
+res_t     lt_ev_check_timeout(event_t *ev);
 #define time_a_gt_b(X) (X)
 /*
 //initialize a base

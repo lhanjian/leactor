@@ -56,6 +56,5 @@ int play_back(int test, void *arg)
     recv(in_fd, in_buff, 32, 0);
     printf("%s\n", in_buff);
 
-
     return 0;
 }

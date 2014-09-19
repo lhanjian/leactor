@@ -114,12 +114,12 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
         return res;
 
     
-    if (!evlist->hole_list.event_len) {
+    if (!evlist->hole_list->event_len) {
         evlist->eventarray[evlist->event_len] = event;
         ++evlist->event_len;
     } else {
-        evlist->hole_list.eventarray[evlist->hole_list.event_len - 1] = event;
-        evlist->hole_list.event_len--;
+        evlist->hole_list->eventarray[evlist->hole_list->event_len - 1] = event;
+        evlist->hole_list->event_len--;
     }
 
     return res;
@@ -130,7 +130,7 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
 base_t *
 lt_base_init(void)
 {
-    res_t res;
+//    res_t res;
 //alloc a memory for a new base 
     base_t *base = realloc(NULL, sizeof(base_t));
     if (!base) {
@@ -149,7 +149,7 @@ lt_base_init(void)
     base->epfd = epfd;
 
 //init base set
-    res = lt_base_init_set(base);
+    lt_base_init_set(base);
 //init epoll_event
 /*	base->epevent = malloc(N*sizeof(struct epoll_event));
 	if (!base->epevent) {
@@ -167,15 +167,16 @@ lt_base_init(void)
 //evlist using TCP-like buffer window？
 res_t 
 lt_io_add(base_t *base, int fd, flag_t flag_set,
-        func_t callback, void *arg, to_t *timeout)
+        func_t callback, void *arg, to_t timeout)
 {
 
 	event_t *event = malloc(sizeof(event_t));
     res_t    res = lt_add_to_evlist(event, &base->readylist, 
 			base, flag_set, fd, callback, arg);
 	
-	if (timeout)
-		lt_timeout_add(timeout);
+	if (timeout) {
+		lt_timeout_add(timeout);//lt_timeout_add TODO
+    }
     
     res = lt_add_to_epfd(base->epfd, event, fd, flag_set);
 
@@ -183,12 +184,12 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 }
 
 static void//res_t
-lt_ev_process_and_moveout(evlist_t *evlist)
+lt_ev_process_and_moveout(activelist_t *evlist)
 {
     int len = evlist->event_len;
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++) {//Why not use Tree?
         event_t *event = evlist->eventarray[i];
-		if (lt_ev_check_timeout(event)) {
+		if (lt_ev_check_timeout(event)) {//TODO
 			--evlist->event_len;
 			continue;
 		}
@@ -225,7 +226,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 		now = lt_gettime();
 
 		//core dispatch
-        ready = epoll_wait(base->epfd, &base->epevent, 
+        ready = epoll_wait(base->epfd, base->epevent, 
 				base->readylist.event_len, base->eptimeout);
         if (ready == -1) {
 			perror("epoll_wait");
@@ -288,16 +289,30 @@ lt_base_free(base_t *base)
 res_t
 lt_remove_from_evlist(event_t *ev, evlist_t *evlist)
 {
-    evlist->hole_list->eventarray[evlist->hole_list.event_len] = ev;
-    evlist->hole_list.event_len++;
+    evlist->hole_list->eventarray[evlist->hole_list->event_len] = ev;
+    evlist->hole_list->event_len++;
 
+    return 0;
 }
 
 void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
-    lt_remove_from_evlist(ev, base->readylist);
-    free(ev);
+    lt_remove_from_evlist(ev, &base->readylist);
+//    free(ev);
     //TODO readylist is too long?
 }
 
+res_t
+lt_ev_check_timeout(event_t *ev)
+{
+
+    return 0;
+}
+
+
+res_t
+lt_timeout_add(to_t to)//add to a tree?
+{
+    return 0;
+}
