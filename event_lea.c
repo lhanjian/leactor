@@ -184,17 +184,17 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 }
 
 static void//res_t
-lt_ev_process_and_moveout(activelist_t *evlist)
+lt_ev_process_and_moveout(activelist_t *evlist, to_t *nowtime)
 {
     int len = evlist->event_len;
     for (int i = 0; i < len; i++) {//Why not use Tree?
         event_t *event = evlist->eventarray[i];
-		if (lt_ev_check_timeout(event)) {//TODO
-			--evlist->event_len;
-			continue;
-		}
-        event->callback(event->fd, event->arg);
         --evlist->event_len;
+		if (lt_ev_check_timeout(event)) {//TODO
+            continue;
+        } else { 
+            event->callback(event->fd, event->arg);
+        }
     }
 }
 
@@ -215,7 +215,7 @@ lt_base_init_actlist(base_t *base, int ready)
 res_t 
 lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 {
-	lt_time_t now;
+	lt_time_t start, now;
 
     int diff;
     int i;
@@ -223,7 +223,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 
     for (;;) {
 		//get time now
-		now = lt_gettime();
+		start = lt_gettime();
 
 		//core dispatch
         ready = epoll_wait(base->epfd, base->epevent, 
@@ -231,10 +231,15 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
         if (ready == -1) {
 			perror("epoll_wait");
             return -1;
-        }
+        } /*(else (ready == 0) {
+            perror("epoll time out");
+            return -1;
+        }*/
+    
 
-		//calc time cosumed
-		diff = lt_time_a_sub_b(lt_gettime(), now);
+		//calc loop time cosumed
+        after = lt_gettime();
+		diff = lt_time_a_sub_b(after, start);
 		if (time_a_gt_b(diff > timeout)) {
 			fprintf(stderr, "loop expired\n");
 			break;
@@ -242,7 +247,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
         
 		lt_base_init_actlist(base, ready);//should init ,but not only insert ready to action.
 
-        lt_ev_process_and_moveout(&base->activelist);
+        lt_ev_process_and_moveout(&base->activelist, after);
     }
 
     return 0;
@@ -306,6 +311,7 @@ lt_io_remove(base_t *base, event_t *ev)//Position TODO
 res_t
 lt_ev_check_timeout(event_t *ev)
 {
+//    ev->time > 
 
     return 0;
 }
@@ -314,5 +320,6 @@ lt_ev_check_timeout(event_t *ev)
 res_t
 lt_timeout_add(to_t to)//add to a tree?
 {
+    to_t endtime = lt_gettime();
     return 0;
 }

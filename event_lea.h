@@ -75,7 +75,7 @@ res_t     lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void
 res_t     lt_base_loop(base_t *base, int timeout);
 res_t     lt_timeout_add(to_t to);
 void      lt_free_evlist(evlist_t *list);
-res_t     lt_ev_check_timeout(event_t *ev);
+res_t     lt_ev_check_timeout(event_t *ev, to_t *timeout);
 #define time_a_gt_b(X) (X)
 /*
 //initialize a base
