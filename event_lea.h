@@ -41,11 +41,11 @@ typedef int to_t;
 
 typedef int flag_t;
 typedef struct event {
-    func_t  callback;
-    void   *arg;
-    flag_t  flag;
-    int     fd;
-    to_t    time;
+    func_t       callback;
+    void        *arg;
+    flag_t       flag;
+    int          fd;
+    lt_time_t    endtime;
 //    int     epfd;
 } event_t;
 
@@ -75,7 +75,8 @@ res_t     lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void
 res_t     lt_base_loop(base_t *base, int timeout);
 res_t     lt_timeout_add(to_t to);
 void      lt_free_evlist(evlist_t *list);
-res_t     lt_ev_check_timeout(event_t *ev, to_t *timeout);
+res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
+res_t     lt_remove_from_evlist(event_t *ev, evlist_t *evlist);
 #define time_a_gt_b(X) (X)
 /*
 //initialize a base

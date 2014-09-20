@@ -1,4 +1,3 @@
-//Name: Leactor
 //Author: lhanjian
 //Start 20130407
 
@@ -175,7 +174,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 			base, flag_set, fd, callback, arg);
 	
 	if (timeout) {
-		lt_timeout_add(timeout);//lt_timeout_add TODO
+		event->endtime = lt_timeout_add(timeout);//lt_timeout_add TODO
     }
     
     res = lt_add_to_epfd(base->epfd, event, fd, flag_set);
@@ -184,13 +183,14 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 }
 
 static void//res_t
-lt_ev_process_and_moveout(activelist_t *evlist, to_t *nowtime)
+lt_ev_process_and_moveout(activelist_t *evlist, lt_time_t nowtime)
 {
     int len = evlist->event_len;
     for (int i = 0; i < len; i++) {//Why not use Tree?
         event_t *event = evlist->eventarray[i];
         --evlist->event_len;
-		if (lt_ev_check_timeout(event)) {//TODO
+		if (lt_ev_check_timeout(event, nowtime)) {//TODO
+            lt_remove_from_evlist(event, evlist);
             continue;
         } else { 
             event->callback(event->fd, event->arg);
@@ -215,7 +215,7 @@ lt_base_init_actlist(base_t *base, int ready)
 res_t 
 lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 {
-	lt_time_t start, now;
+	lt_time_t start, now, after;
 
     int diff;
     int i;
@@ -260,7 +260,6 @@ lt_time_t
 lt_gettime()
 {
 	//TODO done?
-    
     int rv;
 
     lt_time_t time_now;
@@ -309,17 +308,14 @@ lt_io_remove(base_t *base, event_t *ev)//Position TODO
 }
 
 res_t
-lt_ev_check_timeout(event_t *ev)
+lt_ev_check_timeout(event_t *ev, lt_time_t nowtime)
 {
-//    ev->time > 
-
     return 0;
 }
 
-
-res_t
+lt_time_t
 lt_timeout_add(to_t to)//add to a tree?
 {
-    to_t endtime = lt_gettime();
-    return 0;
+    lt_time_t endtime = lt_time_add(lt_gettime(), to);
+    return endtime;
 }
