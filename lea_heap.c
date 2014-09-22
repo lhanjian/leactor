@@ -22,7 +22,13 @@ void min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e)
 {
     unsigned parent = (hole_index - 1) / 2;
     while (hole_index && min_heap_elem_greater(s->p[parent], e)) {
+        s->p[hole_index] = s->[parent];
+        s->p[hole_index]->ev_timeout_pos.min_heap_idx = hole_index;//TODO ev_timeout_pos???
+        hole_index = parent;
+        parent = (hole_index - 1) / 2;
     }
+    s->p[hole_index] = e;
+    s->p[hole_index]->ev_timeout_pos.min_heap_idx = hole_index;//
 
 }
 

@@ -44,7 +44,10 @@ typedef struct event {
     func_t       callback;
     void        *arg;
     flag_t       flag;
-    int          fd;
+    union {
+        int      fd;
+        int      min_heap_idx;
+    };
     lt_time_t    endtime;
 //    int     epfd;
 } event_t;
@@ -78,6 +81,7 @@ void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
 res_t     lt_remove_from_evlist(event_t *ev, evlist_t *evlist);
 #define time_a_gt_b(X) (X)
+#define lt_time_add(X, Y) ((lt_time_t)(X))
 /*
 //initialize a base
 res_t base_init(base_t *base_null);
