@@ -9,8 +9,12 @@ typedef struct min_heap {
 static inline int min_heap_push_(min_heap_t *, event_t *);
 static inline int min_heap_reserve_(min_heap_t *, unsigned);
 static inline void min_heap_shift_up_(min_heap_t *, unsigned, event_t *);
+static inline void min_heap_shift_down_(min_heap_t *, unsigned, event_t *);
 
-int min_heap_push_(min_heap_t* s, event_t *e)
+#define min_heap_elem_greater(a, b) \
+        (lt_time_a_sub_b(&(a)->min_heap_idx, &(b)->ev_timeout))
+int 
+min_heap_push_(min_heap_t* s, event_t *e)
 {
 	if (min_heap_reserve_(s, s->n + 1))
 		return -1;
@@ -18,17 +22,30 @@ int min_heap_push_(min_heap_t* s, event_t *e)
 	return 0;
 }
 
+event_t *
+min_heap_pop_(min_heap_t *s)
+{
+    if (s->n) {
+        event_t *e = *s->p;
+        min_heap_shift_down_(s, 0u, s->p[--s->n]);
+        e->min_heap_idx = -1;
+        return e;
+    } else {
+        return 0;
+    }
+}
+
 void min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e)
 {
     unsigned parent = (hole_index - 1) / 2;
-    while (hole_index && min_heap_elem_greater(s->p[parent], e)) {
-        s->p[hole_index] = s->[parent];
-        s->p[hole_index]->ev_timeout_pos.min_heap_idx = hole_index;//TODO ev_timeout_pos???
+    while (hole_index && min_heap_elem_greater(s->p[parent], e)) {//min time on time
+        s->p[hole_index] = s->p[parent];
+        s->p[hole_index]->min_heap_idx = hole_index;//TODO ev_timeout_pos???
         hole_index = parent;
         parent = (hole_index - 1) / 2;
     }
     s->p[hole_index] = e;
-    s->p[hole_index]->ev_timeout_pos.min_heap_idx = hole_index;//
+    s->p[hole_index]->min_heap_idx = hole_index;//
 
 }
 
