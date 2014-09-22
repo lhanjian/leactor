@@ -12,7 +12,7 @@ static inline void min_heap_shift_up_(min_heap_t *, unsigned, event_t *);
 static inline void min_heap_shift_down_(min_heap_t *, unsigned, event_t *);
 
 #define min_heap_elem_greater(a, b) \
-        (lt_time_a_sub_b(&(a)->min_heap_idx, &(b)->ev_timeout))
+        (lt_time_a_sub_b((a)->endtime, (b)->endtime))
 int 
 min_heap_push_(min_heap_t* s, event_t *e)
 {
@@ -35,7 +35,8 @@ min_heap_pop_(min_heap_t *s)
     }
 }
 
-void min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e)
+void 
+min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e)
 {
     unsigned parent = (hole_index - 1) / 2;
     while (hole_index && min_heap_elem_greater(s->p[parent], e)) {//min time on time
@@ -48,6 +49,24 @@ void min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e)
     s->p[hole_index]->min_heap_idx = hole_index;//
 
 }
+
+void
+min_heap_shift_down_(min_heap_t * s, unsigned hole_index, event_t *e)
+{
+    unsigned min_child = 2 * (hole_index + 1);
+    while (min_child <= s->n) {
+        min_child -= //不用逻辑语句，化分支选择为-1 -0
+            ((min_child == s->n) || min_heap_elem_greater(s->p[min_child], s->p[min_child - 1]));
+        if (!min_heap_elem_greater(e, s->p[min_child])) break;
+        s->p[hole_index] = s->p[min_child];
+        s->p[hole_index]->min_heap_idx = hole_index;
+        hole_index = min_child;
+        min_child = 2 * (hole_index + 1);
+    }
+    s->p[hole_index] = e;
+    s->p[hole_index]->min_heap_idx = hole_index;
+}
+
 
 int min_heap_reserve_(min_heap_t *s, unsigned n)
 {
