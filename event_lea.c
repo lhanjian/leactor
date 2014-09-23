@@ -149,6 +149,8 @@ lt_base_init(void)
 
 //init base set
     lt_base_init_set(base);
+    
+    min_heap_constructor_(base->timeheap);
 //init epoll_event
 /*	base->epevent = malloc(N*sizeof(struct epoll_event));
 	if (!base->epevent) {
@@ -319,4 +321,22 @@ lt_timeout_add(to_t to)//add to a tree?
     lt_time_t endtime = lt_time_add(lt_gettime(), to);
 
     return endtime;
+}
+
+lt_time_t
+lt_time_add(lt_time_t time, to_t to)
+{
+    long nsec, sec;
+    nsec = to + time.tv_nsec;
+    sec  = time.tv_sec;
+
+    while (nsec > 1000000000L) {//1E9 LONG
+        nsec = nsec - 1000000000L;
+        sec += 1L;
+    }
+
+    return (lt_time_t) { 
+        .tv_sec  = sec, 
+        .tv_nsec = nsec 
+    };
 }

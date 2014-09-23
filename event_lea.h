@@ -37,7 +37,7 @@ typedef int res_t;
     int error;
     int correct;
 } res_t;*/
-typedef int to_t;
+typedef long to_t;
 
 typedef int flag_t;
 typedef struct event {
@@ -51,6 +51,12 @@ typedef struct event {
     lt_time_t    endtime;
 //    int     epfd;
 } event_t;
+
+typedef struct min_heap {
+        event_t **p;
+        unsigned  n;
+        unsigned  a;
+} min_heap_t;
 
 typedef struct evlist {
     int             event_len;
@@ -68,6 +74,7 @@ typedef struct base {
     struct epoll_event  *epevent;
     int                 eptimeout;
 	lt_time_t           now;
+    min_heap_t          timeheap;
 //    int                 readylist_pos;
 } base_t;
 
@@ -81,7 +88,8 @@ void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
 res_t     lt_remove_from_evlist(event_t *ev, evlist_t *evlist);
 #define time_a_gt_b(X) (X)
-#define lt_time_add(X, Y) ((lt_time_t)(X))
+//#define lt_time_add(X, Y) ((lt_time_t)(X))
+lt_time_t lt_time_add(lt_time_t , to_t);
 /*
 //initialize a base
 res_t base_init(base_t *base_null);
