@@ -1,10 +1,11 @@
 #include "event_lea.h"
-
+/*
 typedef struct min_heap {
     event_t **p;
     unsigned  n;
     unsigned  a;
 } min_heap_t;
+*/
 
 static inline int min_heap_push_(min_heap_t *, event_t *);
 static inline int min_heap_reserve_(min_heap_t *, unsigned);
