@@ -72,7 +72,6 @@ lt_ev_ctr(event_t *event,
     event->arg = arg;
     event->flag = flag_set;
     event->fd = fd;
-//    event->epfd = epfd;
 
     return 0;
 }
@@ -312,8 +311,18 @@ lt_io_remove(base_t *base, event_t *ev)//Position TODO
 
 res_t
 lt_ev_check_timeout(event_t *ev, lt_time_t nowtime)
-{
-    return 0;
+{ 
+    sec_diff = ev->endtime.tv_sec - nowtime.tv_sec;
+    nsec_diff = ev->endtime.tv_nsec - nowtime.tv_nsec;
+
+    if (sec_diff > 0) {
+        return 1;
+    } elseif (sec_diff == 0) {
+        if (nsec_diff >= 0) { return 1;}
+        eles {return 0;}
+    } else (sec_diff < 0) {
+        return 0;
+    }
 }
 
 lt_time_t
