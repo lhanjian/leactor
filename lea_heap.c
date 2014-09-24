@@ -1,4 +1,5 @@
 #include "event_lea.h"
+#include "lea_heap.h"
 /*
 typedef struct min_heap {
     event_t **p;
@@ -6,11 +7,12 @@ typedef struct min_heap {
     unsigned  a;
 } min_heap_t;
 */
-
+/*
 static inline int min_heap_push_(min_heap_t *, event_t *);
 static inline int min_heap_reserve_(min_heap_t *, unsigned);
 static inline void min_heap_shift_up_(min_heap_t *, unsigned, event_t *);
 static inline void min_heap_shift_down_(min_heap_t *, unsigned, event_t *);
+*/
 
 #define min_heap_elem_greater(a, b) \
         (lt_time_a_sub_b((a)->endtime, (b)->endtime))

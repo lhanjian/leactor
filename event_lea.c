@@ -1,6 +1,7 @@
 //Author: lhanjian
 //Start 20130407
 
+#include "lea_heap.h"
 #include "event_lea.h"
 
 static int
@@ -176,7 +177,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 			base, flag_set, fd, callback, arg);
 	
 	if (timeout) {
-		event->endtime = lt_timeout_add(timeout);//lt_timeout_add TODO
+		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
     }
     
     res = lt_add_to_epfd(base->epfd, event, fd, flag_set);
@@ -316,9 +317,11 @@ lt_ev_check_timeout(event_t *ev, lt_time_t nowtime)
 }
 
 lt_time_t
-lt_timeout_add(to_t to)//add to a tree?
+lt_timeout_add(base_t *base, event_t *ev, to_t to)//add to a tree?
 {
-    lt_time_t endtime = lt_time_add(lt_gettime(), to);
+    lt_time_t endtime = lt_time_addition(lt_gettime(), to);
+    
+    min_heap_push_(base->min_heap, ev);
 
     return endtime;
 }
