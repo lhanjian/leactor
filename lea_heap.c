@@ -16,6 +16,14 @@ static inline void min_heap_shift_down_(min_heap_t *, unsigned, event_t *);
 
 #define min_heap_elem_greater(a, b) \
         (lt_time_a_sub_b((a)->endtime, (b)->endtime))
+
+void 
+min_heap_elem_init_(event_t *ev)
+{ 
+    ev->min_heap_idx = -1;
+    return;
+}
+
 int 
 min_heap_push_(min_heap_t* s, event_t *e)
 {

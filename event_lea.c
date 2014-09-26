@@ -198,6 +198,8 @@ lt_ev_process_and_moveout(activelist_t *evlist, lt_time_t nowtime)
             event->callback(event->fd, event->arg);
         }
     }
+
+    return;
 }
 
 static inline void
@@ -256,14 +258,12 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 }
 /*ToDo001 timeout to limit dispatch time?*/
 
-//gettime
 
 lt_time_t
 lt_gettime()
 {
 	//TODO done?
     int rv;
-
     lt_time_t time_now;
 
     rv = clock_gettime(CLOCK_MONOTONIC_RAW, &time_now);
@@ -330,6 +330,7 @@ lt_timeout_add(base_t *base, event_t *ev, to_t to)//add to a tree?
 {
     lt_time_t endtime = lt_time_addition(lt_gettime(), to);
     
+    min_heap_elem_init_(ev);
     min_heap_push_(base->min_heap, ev);
 
     return endtime;
