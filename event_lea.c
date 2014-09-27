@@ -37,7 +37,6 @@ res_t
 lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 {
     res_t res;
-//    int events;
     struct epoll_event ev;//
 
     ev.events = 0;
@@ -45,7 +44,10 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
         ev.events |= EPOLLIN;
     if (flag & LV_FDWR)
         ev.events |= EPOLLOUT;
-    ev.events |= EPOLLET;
+    if (flag & LV_CONN) { 
+        ev.events |= EPOLLET;//maybe need EPOLL LT
+    }
+    
     ev.data.ptr = event;
     
     res = epoll_ctl(epfd, EPOLL_CTL_ADD, mon_fd, &ev);
@@ -166,6 +168,7 @@ lt_base_init(void)
 //push a io event to base_t
 //POSITION 
 //evlist using TCP-like buffer window？
+//if add the same fd?
 res_t 
 lt_io_add(base_t *base, int fd, flag_t flag_set,
         func_t callback, void *arg, to_t timeout)
@@ -183,6 +186,15 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 
     return res;
 }
+
+res_t
+lt_io_mod(base_t *base, int fd, flag_t flag_set,
+        func_t callback, void *arg, to_t timeout)
+{
+    event_t *event = fd_to_evlist(fd);
+
+}
+
 
 static void//res_t
 lt_ev_process_and_moveout(activelist_t *evlist, lt_time_t nowtime)

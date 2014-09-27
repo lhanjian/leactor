@@ -91,4 +91,3 @@ int min_heap_reserve_(min_heap_t *s, unsigned n)
     }
     return 0;
 }
-
