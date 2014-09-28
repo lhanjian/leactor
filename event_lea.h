@@ -16,7 +16,7 @@
 #define EVLIST_LEN 4096
 #define EPEV_MAX EVLIST_LEN
 
-
+#define LV_CONN (0x0000004)
 #define LV_FDRD (0x0000001)
 #define LV_FDWR (0x0000002)
 #define INF (0)
@@ -24,8 +24,7 @@
 //#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
-typedef struct timespec 
-                  lt_time_t;
+typedef struct timespec  lt_time_t;
 typedef int       numlist_t;
 typedef int       epfd_t;
 typedef numlist_t numactlist_t;
@@ -44,10 +43,8 @@ typedef struct event {
     func_t       callback;
     void        *arg;
     flag_t       flag;
-    union {
-        int      fd;
-        int      min_heap_idx;
-    };
+    int          fd; 
+    int          min_heap_idx;
     lt_time_t    endtime;
 //    int     epfd;
 } event_t;
@@ -60,7 +57,8 @@ typedef struct min_heap {
 
 typedef struct evlist {
     int             event_len;
-    struct evlist  *hole_list;
+    int             hole_len;
+    event_t      ***hole_list;
     event_t       **eventarray;
 } readylist_t, activelist_t, evlist_t;
 
@@ -79,11 +77,11 @@ typedef struct base {
 } base_t;
 
 lt_time_t lt_gettime(void);
-int       lt_time_a_sub_b(lt_time_t a, lt_time_t b);
+long      lt_time_a_sub_b(lt_time_t a, lt_time_t b);
 base_t*   lt_base_init(void);
-res_t     lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
+event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 res_t     lt_base_loop(base_t *base, int timeout);
-res_t     lt_timeout_add(base_t *base, event_t *ev, to_t to);
+lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
 res_t     lt_remove_from_evlist(event_t *ev, evlist_t *evlist);
@@ -108,4 +106,6 @@ res_t base_dispatch(base_t *base_dispatch
 /*
 res_t base_free(base_t *base_rlve);
 */
+#include "lea_heap.h"
 #endif
+

@@ -9,6 +9,7 @@ int incoming(int, void *);
 int play_back(int, void *);
 
 base_t *base;
+
 int main(void)
 {
     int my_sock = socket(AF_INET, SOCK_STREAM, 0);

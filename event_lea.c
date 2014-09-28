@@ -1,7 +1,6 @@
 //Author: lhanjian
 //Start 20130407
 
-#include "lea_heap.h"
 #include "event_lea.h"
 
 static int
@@ -14,6 +13,7 @@ lt_alloc_evlist(evlist_t *evlist)
 	}
     */
 	evlist->event_len = 0;
+    evlist->hole_len = 0;
 	return 0;
 }
 
@@ -23,7 +23,7 @@ lt_base_init_set(base_t *base)
 	if (lt_alloc_evlist(&base->readylist) == -1)
 		return -1;
 	if (lt_alloc_evlist(&base->activelist) == -1) {
-		free(&base->activelist);
+//		free(&base->activelist);
 		return -1;
 	}
 
@@ -64,7 +64,7 @@ lt_ev_ctr(event_t *event,
         flag_t flag_set, int fd, //int epfd,
         func_t callback, void *arg)
 {
-    event = realloc(NULL, sizeof(event_t));
+    event = malloc(NULL, sizeof(event_t));
     if (event == NULL) {
     //    err_realloc(event);
         return -1;
@@ -119,8 +119,8 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
         evlist->eventarray[evlist->event_len] = event;
         ++evlist->event_len;
     } else {
-        evlist->hole_list->eventarray[evlist->hole_list->event_len - 1] = event;
-        evlist->hole_list->event_len--;
+        *(evlist->hole_list[evlist->hole_len - 1]) = event;
+        evlist->hole_len--;
     }
 
     return res;
@@ -152,7 +152,7 @@ lt_base_init(void)
 //init base set
     lt_base_init_set(base);
     
-    min_heap_constructor_(base->timeheap);
+    min_heap_constructor_(&base->timeheap);
 //init epoll_event
 /*	base->epevent = malloc(N*sizeof(struct epoll_event));
 	if (!base->epevent) {
@@ -169,7 +169,7 @@ lt_base_init(void)
 //POSITION 
 //evlist using TCP-like buffer window？
 //if add the same fd?
-res_t 
+event_t *
 lt_io_add(base_t *base, int fd, flag_t flag_set,
         func_t callback, void *arg, to_t timeout)
 {
@@ -177,6 +177,11 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 	event_t *event = malloc(sizeof(event_t));
     res_t    res = lt_add_to_evlist(event, &base->readylist, 
 			base, flag_set, fd, callback, arg);
+
+    if (res) {
+        fprintf(stderr, "lt_add_to_evlist error");
+        return NULL;
+    }
 	
 	if (timeout) {
 		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
@@ -184,16 +189,18 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
     
     res = lt_add_to_epfd(base->epfd, event, fd, flag_set);
 
-    return res;
+    return event;
 }
-
+/*
 res_t
-lt_io_mod(base_t *base, int fd, flag_t flag_set,
+lt_io_mod(base_t *base, event_t *ev, flag_t flag_set,
         func_t callback, void *arg, to_t timeout)
 {
-    event_t *event = fd_to_evlist(fd);
+
+    return 
 
 }
+*/
 
 
 static void//res_t
@@ -202,7 +209,7 @@ lt_ev_process_and_moveout(activelist_t *evlist, lt_time_t nowtime)
     int len = evlist->event_len;
     for (int i = 0; i < len; i++) {//Why not use Tree?
         event_t *event = evlist->eventarray[i];
-        --evlist->event_len;
+        --evlist->event_len;//ev_persist
 		if (lt_ev_check_timeout(event, nowtime)) {//TODO
             lt_remove_from_evlist(event, evlist);
             continue;
@@ -231,10 +238,10 @@ lt_base_init_actlist(base_t *base, int ready)
 res_t 
 lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 {
-	lt_time_t start, now, after;
+	lt_time_t start, /*now,*/ after;
 
     int diff;
-    int i;
+//    int i;
     int ready;
 
     for (;;) {
@@ -255,7 +262,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
 
 		//calc loop time cosumed
         after = lt_gettime();
-		diff = lt_time_a_sub_b(after, start);
+		diff = lt_time_a_sub_b(after, start);//SUB TODO
 		if (time_a_gt_b(diff > timeout)) {
 			fprintf(stderr, "loop expired\n");
 			break;
@@ -324,15 +331,15 @@ lt_io_remove(base_t *base, event_t *ev)//Position TODO
 res_t
 lt_ev_check_timeout(event_t *ev, lt_time_t nowtime)
 { 
-    sec_diff = ev->endtime.tv_sec - nowtime.tv_sec;
-    nsec_diff = ev->endtime.tv_nsec - nowtime.tv_nsec;
+    time_t sec_diff = ev->endtime.tv_sec - nowtime.tv_sec;
+    long  nsec_diff = ev->endtime.tv_nsec - nowtime.tv_nsec;
 
     if (sec_diff > 0) {
         return 1;
-    } elseif (sec_diff == 0) {
+    } else if (sec_diff == 0) {
         if (nsec_diff >= 0) { return 1;}
-        eles {return 0;}
-    } else (sec_diff < 0) {
+        else {return 0;}
+    } else /*(sec_diff < 0)*/ {
         return 0;
     }
 }
@@ -343,13 +350,13 @@ lt_timeout_add(base_t *base, event_t *ev, to_t to)//add to a tree?
     lt_time_t endtime = lt_time_addition(lt_gettime(), to);
     
     min_heap_elem_init_(ev);
-    min_heap_push_(base->min_heap, ev);
+    min_heap_push_(&base->timeheap, ev);
 
     return endtime;
 }
 
 lt_time_t
-lt_time_add(lt_time_t time, to_t to)
+lt_time_addition(lt_time_t time, to_t to)
 {
     long nsec, sec;
     nsec = to + time.tv_nsec;
@@ -365,3 +372,17 @@ lt_time_add(lt_time_t time, to_t to)
         .tv_nsec = nsec 
     };
 }
+
+long 
+lt_time_a_sub_b(lt_time_t a, lt_time_t b)
+{
+    long res;
+    lt_time_t ans = {
+        .tv_sec = a.tv_sec - b.tv_sec, 
+        .tv_nsec = a.tv_nsec - b.tv_nsec
+    };
+//when a must gt b 
+    res = ans.tv_nsec + ans.tv_sec * 1000000000L;
+    return res;
+}
+
