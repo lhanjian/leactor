@@ -5,7 +5,7 @@
 #define _LEA_EVENT_H_INCLUDED_
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <limits.h>
 #include <time.h>
 //system independence
 #include <sys/epoll.h>
@@ -19,7 +19,7 @@
 #define LV_CONN (0x0000004)
 #define LV_FDRD (0x0000001)
 #define LV_FDWR (0x0000002)
-#define INF (0)
+#define INF (LONG_MAX)
 #define NULL_ARG (NULL)
 //#define 
 //static funtion didn't dispatch return value;
@@ -80,7 +80,7 @@ lt_time_t lt_gettime(void);
 long      lt_time_a_sub_b(lt_time_t a, lt_time_t b);
 base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
-res_t     lt_base_loop(base_t *base, int timeout);
+res_t     lt_base_loop(base_t *base, long timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <netinet/in.h>
 
 int incoming(int, void *);
 int play_back(int, void *);
@@ -13,13 +14,15 @@ base_t *base;
 int main(void)
 {
     int my_sock = socket(AF_INET, SOCK_STREAM, 0);
-    
     if (listen(my_sock,SOMAXCONN)) {
         perror(NULL);
         exit(EXIT_FAILURE);
     }
     
-    struct sockaddr_storage local_addr;
+    struct sockaddr_in local_addr;
+    local_addr.sin_family = AF_INET;
+    local_addr.sin_port = htons(80);
+    local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     socklen_t local_addrlen = sizeof(local_addr);
 

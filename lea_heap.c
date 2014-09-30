@@ -58,7 +58,6 @@ min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e)
     }
     s->p[hole_index] = e;
     s->p[hole_index]->min_heap_idx = hole_index;//
-
 }
 
 void

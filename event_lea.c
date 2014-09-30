@@ -60,11 +60,11 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 }
 
 static res_t
-lt_ev_ctr(event_t *event, 
+lt_ev_constructor_(event_t *event, 
         flag_t flag_set, int fd, //int epfd,
         func_t callback, void *arg)
 {
-    event = malloc(NULL, sizeof(event_t));
+    event = malloc(sizeof(event_t));
     if (event == NULL) {
     //    err_realloc(event);
         return -1;
@@ -79,7 +79,7 @@ lt_ev_ctr(event_t *event,
 }
 
 static inline res_t
-lt_io_ctr(evlist_t *evlist)
+lt_eventarray_constructor_(evlist_t *evlist)
 {
 	if (!evlist) {
 		if (lt_alloc_evlist(evlist) == -1)
@@ -87,7 +87,7 @@ lt_io_ctr(evlist_t *evlist)
 	}
     if (!evlist->event_len || evlist->event_len == EVLIST_LEN) {
         evlist->eventarray = realloc(evlist->eventarray,
-                (sizeof(event_t)) *(evlist->event_len>>2));
+                (sizeof(event_t)) * (evlist->event_len>>2));
         if (evlist == NULL) {
 			perror("realloc");
             return -1;
@@ -106,21 +106,20 @@ lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base,
 {
     res_t res;
 
-    res = lt_ev_ctr(event, flag_set, fd, callback, arg);
+    res = lt_ev_constructor_(event, flag_set, fd, callback, arg);
     if (res)
         return res;
 
-    res = lt_io_ctr(evlist);
+    res = lt_eventarray_constructor_(evlist);
     if (res)
         return res;
 
     
-    if (!evlist->hole_list->event_len) {
+    if (!evlist->hole_len) {
         evlist->eventarray[evlist->event_len] = event;
         ++evlist->event_len;
     } else {
-        *(evlist->hole_list[evlist->hole_len - 1]) = event;
-        evlist->hole_len--;
+        *(evlist->hole_list[evlist->hole_len-- - 1]) = event;//pop a ev
     }
 
     return res;
@@ -236,7 +235,7 @@ lt_base_init_actlist(base_t *base, int ready)
 }
 //core dispatch
 res_t 
-lt_base_loop(base_t *base, /*lt_time_t*/int timeout)
+lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 {
 	lt_time_t start, /*now,*/ after;
 
@@ -310,12 +309,10 @@ lt_base_free(base_t *base)
 }
 
 
-//remove event
 res_t
 lt_remove_from_evlist(event_t *ev, evlist_t *evlist)
 {
-    evlist->hole_list->eventarray[evlist->hole_list->event_len] = ev;
-    evlist->hole_list->event_len++;
+    evlist->hole_list[evlist->hole_len++] = &ev;//push a pos of ev to hole_list
 
     return 0;
 }
