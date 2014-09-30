@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <netinet/in.h>
+#include <string.h>
+#include <netdb.h>
 
 int incoming(int, void *);
 int play_back(int, void *);
@@ -13,22 +14,25 @@ base_t *base;
 
 int main(void)
 {
-    int my_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen(my_sock,SOMAXCONN)) {
-        perror(NULL);
-        exit(EXIT_FAILURE);
-    }
+    int my_sock;
     
-    struct sockaddr_in local_addr;
-    local_addr.sin_family = AF_INET;
-    local_addr.sin_port = htons(80);
-    local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    struct addrinfo hints, *res;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
 
-    socklen_t local_addrlen = sizeof(local_addr);
+    getaddrinfo(NULL, "12344", &hints, &res);
 
-    bind(my_sock, (struct sockaddr *)&local_addr, local_addrlen);
+    for (struct addrinfo *p; p != NULL; p = p->ai_next) {
+        my_sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        bind(my_sock, p->ai_addr, p->ai_addrlen);
+    }
+    freeaddrinfo(res);
 
-    base = lt_base_init();
+    listen(my_sock, SOMAXCONN);
+
+    base_t *base = lt_base_init();
     
     lt_io_add(base, my_sock, LV_FDRD, incoming, &my_sock, INF);
 

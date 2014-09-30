@@ -86,7 +86,7 @@ lt_eventarray_constructor_(evlist_t *evlist)
 			return -1;
 	}
     if (!evlist->event_len || evlist->event_len == EVLIST_LEN) {
-        evlist->eventarray = realloc(evlist->eventarray,
+        evlist->eventarray = realloc(evlist->eventarray,//TODO realloc is wrong
                 (sizeof(event_t)) * (evlist->event_len>>2));
         if (evlist == NULL) {
 			perror("realloc");
