@@ -3,6 +3,8 @@
 
 #include "event_lea.h"
 
+#include <errno.h>
+
 static int
 lt_alloc_evlist(evlist_t *evlist)
 {
@@ -86,7 +88,7 @@ lt_eventarray_constructor_(evlist_t *evlist)
 			return -1;
 	}
     if (!evlist->event_len || evlist->event_len == EVLIST_LEN) {
-        evlist->eventarray = realloc(evlist->eventarray,//TODO realloc is wrong
+        evlist->eventarray = malloc(//realloc(evlist->eventarray,//TODO realloc is wrong
                 (sizeof(event_t)) * (evlist->event_len>>2));
         if (evlist == NULL) {
 			perror("realloc");
@@ -152,13 +154,13 @@ lt_base_init(void)
     lt_base_init_set(base);
     
     min_heap_constructor_(&base->timeheap);
-//init epoll_event
-/*	base->epevent = malloc(N*sizeof(struct epoll_event));
-	if (!base->epevent) {
-		fprintf(stderr, "malloc\n");
-		return -1;
-	}
-    */
+//init epoll_event 
+//Fxxk you, libevent;
+//	base->epevent = malloc(INIT_EPEV*sizeof(struct epoll_event));
+//	if (!base->epevent) {
+//		fprintf(stderr, "malloc\n");
+//		return NULL;
+//	}
 
     return base;
 }
@@ -247,10 +249,18 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 		//get time now
 		start = lt_gettime();
 
+        /*
+        int errsv = errno;
+        puts(strerror(errsv));
+        fprintf(stderr, "sth failed errsv:%d\n", errsv);
+        */
+        struct epoll_event epevent[INIT_EPEV];
+
 		//core dispatch
-        ready = epoll_wait(base->epfd, base->epevent, 
+        ready = epoll_wait(base->epfd, /*base->*/epevent, 
 				base->readylist.event_len, base->eptimeout);
         if (ready == -1) {
+            
 			perror("epoll_wait");
             return -1;
         } /*(else (ready == 0) {

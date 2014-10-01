@@ -1,5 +1,6 @@
 #include "event_lea.h"
 
+#include <unistd.h>
 #include <sys/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,19 +19,40 @@ int main(void)
     
     struct addrinfo hints, *res;
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    getaddrinfo(NULL, "12344", &hints, &res);
+    int rv;
+    if ((rv = getaddrinfo(NULL, "12344", &hints, &res))) {
+        fprintf(stderr, "gai:%s\n", gai_strerror(rv));
+    }
 
-    for (struct addrinfo *p; p != NULL; p = p->ai_next) {
+    for (struct addrinfo *p = res; p != NULL; p = p->ai_next) {
         my_sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        bind(my_sock, p->ai_addr, p->ai_addrlen);
+        if (my_sock == -1)  {
+            perror("skt");
+            continue;
+        }
+
+        int yes = 1;
+        if (setsockopt(my_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
+            perror("sso");
+            exit(1);
+        }
+        
+        if ( bind(my_sock, p->ai_addr, p->ai_addrlen) == -1 ) {
+            close(my_sock);
+            perror("bind");
+            continue;
+        }
     }
     freeaddrinfo(res);
 
-    listen(my_sock, SOMAXCONN);
+    if (listen(my_sock, SOMAXCONN) == -1) {
+        perror("listen");
+        exit(1);
+    }
 
     base_t *base = lt_base_init();
     
@@ -48,6 +70,10 @@ int incoming(int test, void *arg)
     int my_sock = *(int *)arg;
 
     int new_in_fd = accept(my_sock, (struct sockaddr *)&sa, &addr_len);
+    if (new_in_fd == -1) {
+        perror("acpt");
+        return -1;;
+    }
 
     lt_io_add(base, new_in_fd, LV_FDRD, play_back, &new_in_fd, INF);
 

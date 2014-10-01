@@ -5,6 +5,7 @@
 #define _LEA_EVENT_H_INCLUDED_
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <time.h>
 //system independence
@@ -12,8 +13,8 @@
 #define MAX_ACTIVE
 #define MAX_READY
 
-#define INIT_EPEV 32
-#define EVLIST_LEN 4096
+#define INIT_EPEV (32)
+#define EVLIST_LEN (4096)
 #define EPEV_MAX EVLIST_LEN
 
 #define LV_CONN (0x0000004)
