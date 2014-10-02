@@ -13,7 +13,7 @@
 #define MAX_ACTIVE
 #define MAX_READY
 
-#define INIT_EPEV (32)
+#define INIT_EPEV (512)
 #define EVLIST_LEN (4096)
 #define EPEV_MAX EVLIST_LEN
 

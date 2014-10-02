@@ -254,11 +254,11 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
         puts(strerror(errsv));
         fprintf(stderr, "sth failed errsv:%d\n", errsv);
         */
-        struct epoll_event epevent[INIT_EPEV];
+        struct epoll_event epevents[INIT_EPEV];
 
 		//core dispatch
-        ready = epoll_wait(base->epfd, /*base->*/epevent, 
-				base->readylist.event_len, base->eptimeout);
+        ready = epoll_wait(base->epfd, /*base->*/epevents, 
+				/*base->readylist.event_len*/INIT_EPEV, base->eptimeout);
         if (ready == -1) {
             
 			perror("epoll_wait");
