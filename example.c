@@ -56,7 +56,7 @@ int main(void)
 
     base_t *base = lt_base_init();
     
-    lt_io_add(base, my_sock, LV_FDRD, incoming, &my_sock, INF);
+    lt_io_add(base, my_sock, LV_FDRD, &incoming, &my_sock, INF);
 
     lt_base_loop(base, INF);
 
@@ -75,7 +75,7 @@ int incoming(int test, void *arg)
         return -1;;
     }
 
-    lt_io_add(base, new_in_fd, LV_FDRD, play_back, &new_in_fd, INF);
+    lt_io_add(base, new_in_fd, LV_FDRD, &play_back, &new_in_fd, INF);
 
     return 0;
 }

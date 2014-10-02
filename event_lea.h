@@ -14,7 +14,7 @@
 #define MAX_READY
 
 #define INIT_EPEV (512)
-#define EVLIST_LEN (4096)
+#define EVLIST_LEN (DEFAULT_MMAP_THRESHOLD_MAX)
 #define EPEV_MAX EVLIST_LEN
 
 #define LV_CONN (0x0000004)
@@ -22,6 +22,8 @@
 #define LV_FDWR (0x0000002)
 #define INF (LONG_MAX)
 #define NULL_ARG (NULL)
+#define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
+#define DELETED (0)
 //#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
@@ -29,7 +31,7 @@ typedef struct timespec  lt_time_t;
 typedef int       numlist_t;
 typedef int       epfd_t;
 typedef numlist_t numactlist_t;
-typedef numlist_t numreadylist_t;
+typedef numlist_t numeeadylist_t;
 typedef int (*func_t)(int fd, void *arg);
 
 typedef int res_t;
@@ -47,6 +49,7 @@ typedef struct event {
     int          fd; 
     int          min_heap_idx;
     lt_time_t    endtime;
+    int          deleted;
 //    int     epfd;
 } event_t;
 
@@ -56,18 +59,31 @@ typedef struct min_heap {
         unsigned  a;
 } min_heap_t;
 
-typedef struct evlist {
-    int             event_len;
-    int             hole_len;
-    event_t      ***hole_list;
-    event_t       **eventarray;
-} readylist_t, activelist_t, evlist_t;
+typedef struct {
+    int event_len;
+    event_t **eventarray;
+    event_t *event_head;
+//   int             hole_len;
+//    event_t      ***hole_list;//deleted position
+} ready_evlist_t;//, activelist_t, evlist_t;
+
+typedef struct {
+    int event_len;
+    event_t ***eventarray;
+} active_evlist_t;
+
+
+typedef struct {
+    int event_len;
+    event_t ***eventarray;
+} deleted_evlist_t;
 
 typedef struct base {
 //active event list and its number
-    activelist_t        activelist;//ref? //TODO: certain binary tree?
+    active_evlist_t     activelist;//ref? //TODO: certain binary tree?
 //eventlist list and its number
-    readylist_t         readylist;
+    ready_evlist_t      readylist;
+    deleted_evlist_t    deletedlist;
 //epoll functions need it.
     int                 epfd; 
     struct epoll_event  *epevent;
@@ -83,9 +99,10 @@ base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 res_t     lt_base_loop(base_t *base, long timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
-void      lt_free_evlist(evlist_t *list);
+//void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
-res_t     lt_remove_from_evlist(event_t *ev, evlist_t *evlist);
+//res_t     lt_remove_from_evlist(event_t *ev, active_evlist_t *evlist);
+res_t     lt_remove_from_readylist(event_t *ev, active_evlist_t *evlist);
 #define time_a_gt_b(X) (X)
 //#define lt_time_add(X, Y) ((lt_time_t)(X))
 lt_time_t lt_time_addition(lt_time_t , to_t);
