@@ -50,6 +50,7 @@ typedef struct event {
     int          min_heap_idx;
     lt_time_t    endtime;
     int          deleted;
+    int          pos_in_ready;
 //    int     epfd;
 } event_t;
 
@@ -101,8 +102,8 @@ res_t     lt_base_loop(base_t *base, long timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 //void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
-//res_t     lt_remove_from_evlist(event_t *ev, active_evlist_t *evlist);
-res_t     lt_remove_from_readylist(event_t *ev, active_evlist_t *evlist);
+res_t     lt_remove_from_readylist(event_t *ev, ready_evlist_t *evlist, deleted_evlist_t *deletedlist);
+//res_t     lt_remove_from_readylist(event_t *ev, active_evlist_t *evlist);
 #define time_a_gt_b(X) (X)
 //#define lt_time_add(X, Y) ((lt_time_t)(X))
 lt_time_t lt_time_addition(lt_time_t , to_t);

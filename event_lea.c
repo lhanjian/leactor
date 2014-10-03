@@ -22,12 +22,14 @@ lt_alloc_evlist(evlist_t *evlist)
 res_t
 lt_base_init_set(base_t *base)
 {
+    /*
 	if (lt_alloc_evlist(&base->readylist) == -1)
 		return -1;
 	if (lt_alloc_evlist(&base->activelist) == -1) {
 //		free(&base->activelist);
 		return -1;
 	}
+    */
 
     base->readylist.event_len = -1;
     base->activelist.event_len = -1;
@@ -61,15 +63,29 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
     return res;
 }
 
-static res_t
-lt_ev_constructor_(event_t *event, 
+static event_t *
+lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event_t *event, 
         flag_t flag_set, int fd, //int epfd,
         func_t callback, void *arg, int deleted)
 {
 //    event = malloc(sizeof(event_t));
-    if (event == NULL) {
+/*   if (event == NULL) {
     //    err_realloc(event);
         return -1;
+    }
+    */
+    event_t *event;
+
+    if (!deletedlist->event_len || deletedlist->event_len == -1) {
+        event = (event_t *)&evlist->eventarray[evlist->event_len];
+        evlist->event_len++;
+//        readylist->eventarray[readylist->event_len] = event;
+//        evlist->eventarray[evlist->event_len] = event;
+//        ++evlist->event_len;
+    } else {
+        event = *(deletedlist->eventarray[deletedlist->event_len]);
+        deletedlist->event_len--;
+//        *(evlist->hole_list[evlist->hole_len-- - 1]) = event;//pop a ev
     }
 
     event->callback = callback;
@@ -78,16 +94,17 @@ lt_ev_constructor_(event_t *event,
     event->fd = fd;
     event->deleted = deleted;
 
-    return 0;
+    return event;
 }
 
 static inline res_t
-lt_eventarray_constructor_(evlist_t *evlist)
+lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
 {
 /* 	if (!evlist) {
 		if (lt_alloc_evlist(evlist) == -1)
 			return -1;
-*/	}
+            }
+*/	
     if (evlist->event_len == -1)/* || evlist->event_len == EVLIST_LEN)*/ {
         evlist->eventarray = malloc(sizeof(event_t) * EVLIST_LEN);
             //malloc(realloc(evlist->eventarray,//TODO realloc is wrong
@@ -96,7 +113,7 @@ lt_eventarray_constructor_(evlist_t *evlist)
 			perror("malloc eventarray");
             return -1;
         }
-	//	++evlist->event_len;
+        evlist->event_len = 0;
     } else if (evlist->event_len == EVLIST_LEN) {
         //TODO
         //make a memory pool?
@@ -107,29 +124,21 @@ lt_eventarray_constructor_(evlist_t *evlist)
 
 //evlist belongs to base, but it can make evlist_t opaque,
 //so pass the evlist to this routine
-static res_t
-lt_add_to_evlist(event_t *event, evlist_t *evlist, base_t *base, 
+static event_t *
+lt_add_to_evlist(ready_evlist_t *readylist, deleted_evlist_t* deletedlist,
     flag_t flag_set, int fd, func_t callback, void *arg)
 {
     res_t res;
 
-    res = lt_ev_constructor_(event, flag_set, fd, callback, arg, DELETED);
-    if (res)
-        return res;
+    res = lt_eventarray_constructor_(readylist);
+    if (res == -1)
+        return NULL;
 
-    res = lt_eventarray_constructor_(evlist);
-    if (res)
-        return res;
+    event_t *event = lt_ev_constructor_(readylist, deletedlist, flag_set, fd, callback, arg, DELETED);
+    if (event == NULL)
+        return NULL;
 
-    
-    if (!evlist->hole_len) {
-        evlist->eventarray[evlist->event_len] = event;
-        ++evlist->event_len;
-    } else {
-        *(evlist->hole_list[evlist->hole_len-- - 1]) = event;//pop a ev
-    }
-
-    return res;
+    return event;
 }
 
 
@@ -179,25 +188,22 @@ event_t *
 lt_io_add(base_t *base, int fd, flag_t flag_set,
         func_t callback, void *arg, to_t timeout)
 {
-
-	event_t *event = malloc(sizeof(event_t));
+//	event_t *event = base->readylist.eventarray[base->readylist.event_len];
+    event_t *event = lt_add_to_evlist(/*event,*/ &base->readylist, &base->deletedlist, 
+            flag_set, fd, callback, arg);
     if (event == NULL) {
         perror("malloc event");
         exit(-1);
     }
-    res_t    res = lt_add_to_evlist(event, &base->readylist, 
-			base, flag_set, fd, callback, arg);
-
-    if (res) {
+/*    if (res) {
         fprintf(stderr, "lt_add_to_evlist error");
         return NULL;
-    }
-	
+    }*/
 	if (timeout) {
 		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
     }
     
-    res = lt_add_to_epfd(base->epfd, event, fd, flag_set);
+    lt_add_to_epfd(base->epfd, event, fd, flag_set);
 
     return event;
 }
@@ -217,14 +223,14 @@ static void//res_t
 lt_ev_process_and_moveout(base_t *base, lt_time_t nowtime)
 {
     int len = base->activelist.event_len;
-    event_t ***evlist = base->activelist.eventarray;
+    active_evlist_t *evlist = &base->activelist;
     for (int i = 0; i < len; i++) {//Why not use Tree?
 
         event_t *event = *evlist->eventarray[i];
         --evlist->event_len;//ev_persist  DONE/ev_oneshot  TODO
 
-		if (lt_ev_check_timeout(event, nowtime)) {//TODO
-            lt_remove_from_readylist(event, &base->readylist);
+		if (lt_ev_check_timeout(event, nowtime)) {
+            lt_remove_from_readylist(event, &base->readylist, &base->deletedlist);
             continue;
         } else { 
             event->callback(event->fd, event->arg);
@@ -236,12 +242,12 @@ lt_ev_process_and_moveout(base_t *base, lt_time_t nowtime)
 static inline void
 lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
 {
-	evlist_t *actlist = &base->activelist;
+	active_evlist_t *actlist = &base->activelist;
 //	evlist_t *readylist = &base->readylist;
 //TODO
 //memset
 
-    if (actlist->event_len == -1) {
+    if (actlist->event_len == -1) {//INIT
         actlist->eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);
         if (actlist->eventarray == NULL) {
             perror("malloc eventarray");
@@ -249,10 +255,9 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
         }
     }
 
-    event_t **act_ev;
+//    event_t **act_ev;
 	for (int i = 0; i < ready; i++) {
-        act_ev = actlist->eventarray + i; 
-        *act_ev = (event_t *)ev_array[i].data.ptr;
+        actlist->eventarray[i] = (event_t **)&ev_array[i].data.ptr;
 //			readylist->eventarray[i];
 	}
 	actlist->event_len = ready;
@@ -300,7 +305,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
         
 		lt_loop_init_actlist(base, epevents, ready);//should init ,but not only insert ready to action.
 
-        lt_ev_process_and_moveout(&base->activelist, after);
+        lt_ev_process_and_moveout(base, after);
     }
 
     return 0;
@@ -323,13 +328,16 @@ lt_gettime()
 
 	return time_now;
 }
-
+/*
 void
 lt_free_evlist(evlist_t *list)
 {
     free(list->eventarray);
 }
+*/
 //remove base
+//TODO
+/*
 void
 lt_base_free(base_t *base)
 {
@@ -338,7 +346,7 @@ lt_base_free(base_t *base)
 
 	free(base);
 }
-
+*/
 
 res_t
 lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, deleted_evlist_t *deletedlist)
@@ -351,7 +359,7 @@ lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, deleted_evlist_
 void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
-    lt_remove_from_evlist(ev, &base->readylist);
+    lt_remove_from_readylist(ev, &base->readylist, &base->deletedlist);
 //    free(ev);
     //TODO readylist is too long?
 }

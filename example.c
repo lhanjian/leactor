@@ -54,9 +54,9 @@ int main(void)
         exit(1);
     }
 
-    base_t *base = lt_base_init();
+    base = lt_base_init();
     
-    lt_io_add(base, my_sock, LV_FDRD, &incoming, &my_sock, INF);
+    lt_io_add(base, my_sock, LV_FDRD, incoming, &my_sock, INF);
 
     lt_base_loop(base, INF);
 
@@ -75,20 +75,19 @@ int incoming(int test, void *arg)
         return -1;;
     }
 
-    lt_io_add(base, new_in_fd, LV_FDRD, &play_back, &new_in_fd, INF);
+    lt_io_add(base, new_in_fd, LV_FDRD, play_back, &new_in_fd, INF);
 
     return 0;
 }
 
 int play_back(int test, void *arg)
 {
-    char in_buff[32];
+    char in_buff[32] = "testlhjtest\n\0";
 
     int in_fd = *(int *)arg;
 
-    in_buff[31] = '\0';
-    recv(in_fd, in_buff, 32, 0);
-    printf("%s\n", in_buff);
+    send(in_fd, in_buff, 32, 0);
+//    printf("%s\n", in_buff);
 
     return 0;
 }
