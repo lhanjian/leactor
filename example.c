@@ -76,7 +76,7 @@ int incoming(int test, void *arg)
         return -1;;
     }
 
-    lt_io_add(base, new_in_fd, LV_FDRD, play_back, &new_in_fd, INF);
+    lt_io_add(base, new_in_fd, LV_FDRD|LV_CONN, play_back, &new_in_fd, INF);
 
     return 0;
 }
