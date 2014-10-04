@@ -12,6 +12,7 @@ int incoming(int, void *);
 int play_back(int, void *);
 
 base_t *base;
+int new_in_fd;
 
 int main(void)
 {
@@ -69,14 +70,13 @@ int incoming(int test, void *arg)
     socklen_t addr_len = sizeof(sa);
     int my_sock = *(int *)arg;
 
-    int *new_in_fd = malloc(sizeof(int));
-    *new_in_fd = accept(my_sock, (struct sockaddr *)&sa, &addr_len);
-    if (*new_in_fd == -1) {
+    new_in_fd = accept(my_sock, (struct sockaddr *)&sa, &addr_len);
+    if (new_in_fd == -1) {
         perror("acpt");
         return -1;;
     }
 
-    lt_io_add(base, *new_in_fd, LV_FDRD|LV_CONN, play_back, new_in_fd, INF);
+    lt_io_add(base, new_in_fd, LV_FDRD|LV_CONN, play_back, &new_in_fd, INF);
 
     return 0;
 }
