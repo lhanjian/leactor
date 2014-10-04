@@ -125,6 +125,5 @@ res_t base_dispatch(base_t *base_dispatch
 /*
 res_t base_free(base_t *base_rlve);
 */
-//#include "lea_heap.h"
 #endif
 
