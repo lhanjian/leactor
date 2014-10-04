@@ -77,7 +77,7 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
     event_t *event;
 
     if (!deletedlist->event_len || deletedlist->event_len == -1) {
-        event = (event_t *)&evlist->eventarray[evlist->event_len];
+        event = (event_t *)evlist->eventarray + evlist->event_len;
         evlist->event_len++;
 //        readylist->eventarray[readylist->event_len] = event;
 //        evlist->eventarray[evlist->event_len] = event;
