@@ -49,7 +49,7 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
     if (flag & LV_FDWR)
         ev.events |= EPOLLOUT;
     if (flag & LV_CONN) { 
-        ev.events |= EPOLLET;//maybe need EPOLL LT
+        ev.events |= EPOLLET;
     }
     
     ev.data.ptr = event;

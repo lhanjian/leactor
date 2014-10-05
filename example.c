@@ -83,12 +83,14 @@ int incoming(int test, void *arg)
 
 int play_back(int test, void *arg)
 {
-    char in_buff[32] = "testlhjtest\n\0";
+    char in_buff[32] = "testlhjtest";
 
     int in_fd = *(int *)arg;
 
     char rcv_buff[32];
-    if ((int rv = recv(in_fd, rcv_buff, 32, 0)) <= 0) {
+    int rv;
+
+    if ((rv = recv(in_fd, rcv_buff, 32, 0)) <= 0) {
         perror("send");
         return -1;
     } else {
