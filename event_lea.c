@@ -116,6 +116,7 @@ lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
         evlist->event_len = 0;
     } else if (evlist->event_len == EVLIST_LEN) {
         //TODO
+        //dsfasdfdfasfc
         //make a memory pool?
     }
 
