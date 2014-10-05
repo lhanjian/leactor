@@ -87,7 +87,19 @@ int play_back(int test, void *arg)
 
     int in_fd = *(int *)arg;
 
-    send(in_fd, in_buff, 32, 0);
+    char rcv_buff[32];
+    if ((int rv = recv(in_fd, rcv_buff, 32, 0)) <= 0) {
+        perror("send");
+        return -1;
+    } else {
+        rcv_buff[31] = '\0';
+        write(STDOUT_FILENO, rcv_buff, rv);
+    }
+
+    if (send(in_fd, in_buff, 32, 0) < 0) {
+        perror("send");
+        return -1;
+    }
 //    printf("%s\n", in_buff);
 
     return 0;

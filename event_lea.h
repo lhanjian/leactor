@@ -125,7 +125,11 @@ res_t base_dispatch(base_t *base_dispatch
 /*
 res_t base_free(base_t *base_rlve);
 */
-typedef struct {
+typedef struct lt_memory_piece {
+    struct lt_memory_piece *next;
+} lt_memory_piece_t;
+
+typedef struct lt_memory_pool {
     size_t one_item_size;
 
     lt_memory_piece_t *head;
@@ -134,12 +138,9 @@ typedef struct {
 
     void *all_item;
 
-    lt_memory_pool_t  *next;
+    struct lt_memory_pool  *next;
 } lt_memory_pool_t;
 
-typedef struct {
-    lt_memory_piece_t *next;
-} lt_memory_piece_t;
 
 lt_memory_pool_t * lt_new_memory_pool(size_t one_item_size);
 void *lt_alloc(lt_memory_pool_t *pool);
