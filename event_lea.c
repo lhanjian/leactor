@@ -106,7 +106,7 @@ lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
             }
 */	
     if (evlist->event_len == -1)/* || evlist->event_len == EVLIST_LEN)*/ {
-        evlist->eventarray = malloc(sizeof(event_t) * EVLIST_LEN);
+        evlist->eventarray = malloc(sizeof(event_t) * EVLIST_LEN);//event_t lt_alloc
             //malloc(realloc(evlist->eventarray,//TODO realloc is wrong
 //                (sizeof(event_t)) * (evlist->event_len>>2));
         if (evlist->eventarray == NULL) {
@@ -249,7 +249,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
 //memset
 
     if (actlist->event_len == -1) {//INIT
-        actlist->eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);
+        actlist->eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);//actlist lt_alloc
         if (actlist->eventarray == NULL) {
             perror("malloc eventarray");
             exit(-1);
@@ -269,13 +269,12 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 {
 	lt_time_t start, /*now,*/ after;
 
-    int diff;
+    long long diff;
 //    int i;
-    int ready;
-
+    int ready; 
+    //get time now 
+    start = lt_gettime();
     for (;;) {
-		//get time now
-		start = lt_gettime();
 
         /*
         int errsv = errno;
@@ -299,7 +298,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 		//calc loop time cosumed
         after = lt_gettime();
 		diff = lt_time_a_sub_b(after, start);//SUB TODO
-		if (time_a_gt_b(diff > timeout)) {
+		if (time_a_gt_b(diff,>,timeout)) {
 			fprintf(stderr, "loop expired\n");
 			break;
 		}
@@ -369,7 +368,7 @@ res_t
 lt_ev_check_timeout(event_t *ev, lt_time_t nowtime)
 { 
     time_t sec_diff = ev->endtime.tv_sec - nowtime.tv_sec;
-    long  nsec_diff = ev->endtime.tv_nsec - nowtime.tv_nsec;
+    long nsec_diff = ev->endtime.tv_nsec - nowtime.tv_nsec;
 
     if (sec_diff > 0) {
         return 1;
@@ -410,16 +409,7 @@ lt_time_addition(lt_time_t time, to_t to)
     };
 }
 
-long 
+long long
 lt_time_a_sub_b(lt_time_t a, lt_time_t b)
-{
-    long res;
-    lt_time_t ans = {
-        .tv_sec = a.tv_sec - b.tv_sec, 
-        .tv_nsec = a.tv_nsec - b.tv_nsec
-    };
-//when a must gt b 
-    res = ans.tv_nsec + ans.tv_sec * 1000000000L;
-    return res;
-}
+{ return a.tv_sec*1000000000LL + a.tv_nsec - b.tv_sec * 1000000000LL - b.tv_nsec; }
 

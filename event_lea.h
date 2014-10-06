@@ -21,6 +21,7 @@
 #define LV_FDRD (0x0000001)
 #define LV_FDWR (0x0000002)
 #define INF (LONG_MAX)
+#define NO_TIMEOUT (-1L)
 #define NULL_ARG (NULL)
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
 #define DELETED (0)
@@ -95,18 +96,20 @@ typedef struct base {
 } base_t;
 
 lt_time_t lt_gettime(void);
-long      lt_time_a_sub_b(lt_time_t a, lt_time_t b);
 base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
+void      lt_io_remove(base_t *base, event_t *ev);
 res_t     lt_base_loop(base_t *base, long timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 //void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
 res_t     lt_remove_from_readylist(event_t *ev, ready_evlist_t *evlist, deleted_evlist_t *deletedlist);
 //res_t     lt_remove_from_readylist(event_t *ev, active_evlist_t *evlist);
-#define time_a_gt_b(X) (X)
+#define time_a_gt_b(X,Y,Z) ((long long)X Y (unsigned long long)Z)
 //#define lt_time_add(X, Y) ((lt_time_t)(X))
 lt_time_t lt_time_addition(lt_time_t , to_t);
+
+long long lt_time_a_sub_b(lt_time_t a, lt_time_t b);
 /*
 //initialize a base
 res_t base_init(base_t *base_null);

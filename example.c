@@ -12,6 +12,8 @@ int incoming(int, void *);
 int play_back(int, void *);
 
 base_t *base;
+event_t *eventarray[128];
+int n = 0;
 
 int main(void)
 {
@@ -56,9 +58,9 @@ int main(void)
 
     base = lt_base_init();
     
-    lt_io_add(base, my_sock, LV_FDRD, incoming, &my_sock, INF);
+    lt_io_add(base, my_sock, LV_FDRD, incoming, &my_sock, NO_TIMEOUT);
 
-    lt_base_loop(base, INF);
+    lt_base_loop(base, NO_TIMEOUT);
 
     return 0;
 }
@@ -76,7 +78,8 @@ int incoming(int test, void *arg)
         return -1;;
     }
 
-    lt_io_add(base, *new_in_fd, LV_FDRD|LV_CONN, play_back, new_in_fd, INF);
+    eventarray[*new_in_fd] = lt_io_add(base, *new_in_fd, LV_FDRD|LV_CONN, play_back, new_in_fd, NO_TIMEOUT);
+    n++;
 
     return 0;
 }
@@ -90,10 +93,13 @@ int play_back(int test, void *arg)
     char rcv_buff[32];
     int rv;
 
-    if ((rv = recv(in_fd, rcv_buff, 32, 0)) <= 0) {
+    if ((rv = recv(in_fd, rcv_buff, 32, 0)) < 0) {
         perror("send");
         return -1;
-    } else {
+    } else if (!rv) {
+        lt_io_remove(base, eventarray[in_fd]);
+        close(in_fd);
+    } else /*>0*/{
         rcv_buff[31] = '\0';
         write(STDOUT_FILENO, rcv_buff, rv);
     }
