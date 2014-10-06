@@ -280,7 +280,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
 
 //    event_t **act_ev;
 	for (int i = 0; i < ready; i++) {
-        actlist->eventarray[i] = (event_t *)ev_array[i].data.ptr;
+        actlist->eventarray[i] = /*(event_t *)*/ev_array[i].data.ptr;
 //			readylist->eventarray[i];
 	}
 	actlist->event_len = ready;
