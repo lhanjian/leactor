@@ -81,7 +81,7 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
 //        evlist->eventarray[evlist->event_len] = event;
 //        ++evlist->event_len;
     } else {
-        event = *(deletedlist->eventarray[deletedlist->event_len - 1]);
+        event = deletedlist->eventarray[deletedlist->event_len - 1];
         deletedlist->event_len--;
 //        *(evlist->hole_list[evlist->hole_len-- - 1]) = event;//pop a ev
     }
