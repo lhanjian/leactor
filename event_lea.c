@@ -81,7 +81,7 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
 //        evlist->eventarray[evlist->event_len] = event;
 //        ++evlist->event_len;
     } else {
-        event = *(deletedlist->eventarray[deletedlist->event_len]);
+        event = *(deletedlist->eventarray[deletedlist->event_len - 1]);
         deletedlist->event_len--;
 //        *(evlist->hole_list[evlist->hole_len-- - 1]) = event;//pop a ev
     }
@@ -105,13 +105,6 @@ lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
             }
 */	
     if (evlist->event_len == -1)/* || evlist->event_len == EVLIST_LEN)*/ {
-        evlist->eventarray = malloc(sizeof(event_t) * EVLIST_LEN);//event_t lt_alloc
-            //malloc(realloc(evlist->eventarray,//TODO realloc is wrong
-//                (sizeof(event_t)) * (evlist->event_len>>2));
-        if (evlist->eventarray == NULL) {
-			perror("malloc eventarray");
-            return -1;
-        }
         evlist->event_len = 0;
     } else if (evlist->event_len == EVLIST_LEN) {
         //TODO
@@ -171,12 +164,33 @@ lt_base_init(void)
     }
 
     base->epfd = epfd;
-    base->readylist.event_len = -1;
-    base->activelist.event_len = -1;
-//    base->now;
 
-//init base set
-//    lt_base_init_set(base);
+    base->readylist.eventarray = malloc(sizeof(event_t) * EVLIST_LEN);//event_t lt_alloc TODO:optimization
+    if (base->readylist.eventarray == NULL) {
+        perror("malloc ready eventarray");
+        return NULL;
+    }
+    base->readylist.event_len = 0;
+
+    base->activelist.eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);
+    if (base->activelist.eventarray == NULL) {
+        perror("malloc active eventarray");
+        free(base->readylist.eventarray);
+        return NULL;
+    }
+    base->activelist.event_len = 0;
+
+    base->deletedlist.eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);
+    if (base->deletedlist.eventarray == NULL) {
+        perror("malloc deleted eventarray");
+        free(base->readylist.eventarray);
+        free(base->deletedlist.eventarray);
+        return NULL;
+    }
+
+            //malloc(realloc(evlist->eventarray,//TODO realloc is wrong
+//                (sizeof(event_t)) * (evlist->event_len>>2));
+//init base set //    lt_base_init_set(base);
     min_heap_constructor_(&base->timeheap);
 //init epoll_event 
 //Fxxk you, libevent;
@@ -201,16 +215,19 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
 //	event_t *event = base->readylist.eventarray[base->readylist.event_len];
     event_t *event = lt_add_to_evlist(/*event,*/ &base->readylist, &base->deletedlist, 
             flag_set, fd, callback, arg);
-    if (event == NULL) {
+/*    if (event == NULL) {
         perror("malloc event");
         exit(-1);
     }
+    */
 /*    if (res) {
         fprintf(stderr, "lt_add_to_evlist error");
         return NULL;
     }*/
 	if (timeout > 0) {
 		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
+    } else {
+        event->min_heap_idx = -1;
     }
     
     lt_add_to_epfd(base->epfd, event, fd, flag_set);
@@ -258,14 +275,8 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
 //	evlist_t *readylist = &base->readylist;
 //TODO
 //memset
-
-    if (actlist->event_len == -1) {//INIT
-        actlist->eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);//actlist lt_alloc
-        if (actlist->eventarray == NULL) {
-            perror("malloc eventarray");
-            exit(-1);
-        }
-    }
+/*
+    */
 
 //    event_t **act_ev;
 	for (int i = 0; i < ready; i++) {
@@ -386,10 +397,11 @@ lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from rea
 void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
+    min_heap_erase_(&base->timeheap, ev);//First erase heap
+
     lt_remove_from_readylist(ev, &base->readylist, &base->deletedlist);
     lt_remove_from_epfd(base->epfd, ev, ev->fd, 0);
 
-    min_heap_erase_(&base->timeheap, ev);
 
     ev->deleted = 1;
 //    erase from heap

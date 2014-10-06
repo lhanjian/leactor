@@ -104,7 +104,8 @@ int play_back(int test, void *arg)
         write(STDOUT_FILENO, rcv_buff, rv);
     }
 
-    if (send(in_fd, in_buff, 32, 0) < 0) {
+    if ((rv = send(in_fd, in_buff, 32, 0)) < 0) {
+        fprintf(stderr, "send rv:%d\n", rv);
         perror("send");
         return -1;
     }
