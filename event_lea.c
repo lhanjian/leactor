@@ -75,7 +75,7 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
 
     if (!deletedlist->event_len || deletedlist->event_len == -1) {
         event = (event_t *)evlist->eventarray + evlist->event_len;
-        event->pos_in_ready = event_len;
+        event->pos_in_ready = evlist->event_len;
         evlist->event_len++;
 //        readylist->eventarray[readylist->event_len] = event;
 //        evlist->eventarray[evlist->event_len] = event;
@@ -177,7 +177,6 @@ lt_base_init(void)
 
 //init base set
 //    lt_base_init_set(base);
-    
     min_heap_constructor_(&base->timeheap);
 //init epoll_event 
 //Fxxk you, libevent;
@@ -293,7 +292,6 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
         fprintf(stderr, "sth failed errsv:%d\n", errsv);
         */
         struct epoll_event epevents[INIT_EPEV];
-
 		//core dispatch
         ready = epoll_wait(base->epfd, /*base->*/epevents, 
 				/*base->readylist.event_len*/INIT_EPEV, -1);
@@ -319,7 +317,6 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
     return 0;
 }
 /*ToDo001 timeout to limit dispatch time?*/
-
 
 lt_time_t
 lt_gettime()
@@ -378,7 +375,7 @@ lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from rea
         &readylist->eventarray[ev->pos_in_ready];
 
     readylist->event_len--;
-    deletedlist.event_len++; 
+    deletedlist->event_len++; 
 
     //TODO memory pool
 
@@ -390,7 +387,7 @@ void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
     lt_remove_from_readylist(ev, &base->readylist, &base->deletedlist);
-    lt_remove_from_epfd(base->epfd, ev, ev->fd, NULL);
+    lt_remove_from_epfd(base->epfd, ev, ev->fd, 0);
 
     min_heap_erase_(&base->timeheap, ev);
 

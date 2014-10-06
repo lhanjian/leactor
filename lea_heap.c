@@ -111,9 +111,9 @@ int min_heap_erase_(min_heap_t *s, event_t *e)
 {
     if (e->min_heap_idx != -1) {
         event_t *last = s->p[--s->n];
-        unsigned parent = (e->ev_timeout_pos -1 ) / 2;
+        unsigned parent = (e->min_heap_idx - 1 ) / 2;
         if (e->min_heap_idx > 0   &&  min_heap_elem_greater(s->p[parent], last) ) {
-            min_heap_shift_up_unconditional(s, e->min_heap_idx, last);
+            min_heap_shift_up_unconditional_(s, e->min_heap_idx, last);
         } else {
             min_heap_shift_down_(s, e->min_heap_idx, last);
         }
