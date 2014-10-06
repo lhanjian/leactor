@@ -108,7 +108,6 @@ res_t     lt_remove_from_readylist(event_t *ev, ready_evlist_t *evlist, deleted_
 #define time_a_gt_b(X,Y,Z) ((long long)X Y (unsigned long long)Z)
 //#define lt_time_add(X, Y) ((lt_time_t)(X))
 lt_time_t lt_time_addition(lt_time_t , to_t);
-
 long long lt_time_a_sub_b(lt_time_t a, lt_time_t b);
 /*
 //initialize a base

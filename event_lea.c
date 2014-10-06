@@ -31,8 +31,6 @@ lt_base_init_set(base_t *base)
 	}
     */
 
-    base->readylist.event_len = -1;
-    base->activelist.event_len = -1;
 
     return 0;
 }
@@ -77,6 +75,7 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
 
     if (!deletedlist->event_len || deletedlist->event_len == -1) {
         event = (event_t *)evlist->eventarray + evlist->event_len;
+        event->pos_in_ready = event_len;
         evlist->event_len++;
 //        readylist->eventarray[readylist->event_len] = event;
 //        evlist->eventarray[evlist->event_len] = event;
@@ -92,7 +91,8 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
     event->flag = flag_set;
     event->fd = fd;
     event->deleted = deleted;
-
+//    event->endtime
+//event->min_heap_idx
     return event;
 }
 
@@ -140,7 +140,15 @@ lt_add_to_evlist(ready_evlist_t *readylist, deleted_evlist_t* deletedlist,
 
     return event;
 }
-
+int 
+epoll_init()
+{
+    int epfd = epoll_create1(EPOLL_CLOEXEC);
+    if (epfd == -1) {
+        perror("epoll_create1");
+    }
+    return epfd;
+}
 
 //initialize a base
 base_t *
@@ -148,24 +156,27 @@ lt_base_init(void)
 {
 //    res_t res;
 //alloc a memory for a new base 
-    base_t *base = realloc(NULL, sizeof(base_t));
+    base_t *base = malloc(sizeof(base_t));
     if (!base) {
 //        err_realloc(base);//TODO
         return NULL;
     }
 
 //epoll create a epfd , then copy it to base
-    int epfd = epoll_create1(EPOLL_CLOEXEC);
+//    epoll_init
+    int epfd = epoll_init();
     if (epfd == -1) {
-		fprintf(stderr, "epoll_create1\n");
-        free(base);//TODO
+        free(base);
         return NULL;
     }
 
     base->epfd = epfd;
+    base->readylist.event_len = -1;
+    base->activelist.event_len = -1;
+//    base->now;
 
 //init base set
-    lt_base_init_set(base);
+//    lt_base_init_set(base);
     
     min_heap_constructor_(&base->timeheap);
 //init epoll_event 
@@ -199,7 +210,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
         fprintf(stderr, "lt_add_to_evlist error");
         return NULL;
     }*/
-	if (timeout > 1) {
+	if (timeout > 0) {
 		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
     }
     
@@ -233,7 +244,7 @@ lt_ev_process_and_moveout(base_t *base, lt_time_t nowtime)
             lt_remove_from_readylist(event, &base->readylist, &base->deletedlist);
             continue;
         } else if (event->deleted && 1){ //cluster some event and del it;
-            ;
+            //TODO:clear it from memory?;
         } else {
             event->callback(event->fd, event->arg);
         }
@@ -276,7 +287,6 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
     //get time now 
     start = lt_gettime();
     for (;;) {
-
         /*
         int errsv = errno;
         puts(strerror(errsv));
@@ -294,8 +304,6 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
             perror("epoll time out");
             return -1;
         }*/
-    
-
 		//calc loop time cosumed
         after = lt_gettime();
 		diff = lt_time_a_sub_b(after, start);//SUB TODO
@@ -303,7 +311,6 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 			fprintf(stderr, "loop expired\n");
 			break;
 		}
-        
 		lt_loop_init_actlist(base, epevents, ready);//should init ,but not only insert ready to action.
 
         lt_ev_process_and_moveout(base, after);
@@ -361,13 +368,19 @@ lt_remove_from_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 
     return res;
 }
+
 res_t
 lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from ready to deleted
         deleted_evlist_t *deletedlist)
 {
  //   evlist->hole_list[evlist->hole_len++] = &ev;//push a pos of ev to hole_list
-    //TODO
-    deletedlist->eventarray[deletedlist->event_len] = &readylist->eventarray[ev->pos_in_ready];
+    deletedlist->eventarray[deletedlist->event_len] = 
+        &readylist->eventarray[ev->pos_in_ready];
+
+    readylist->event_len--;
+    deletedlist.event_len++; 
+
+    //TODO memory pool
 
 
     return 0;
@@ -380,9 +393,11 @@ lt_io_remove(base_t *base, event_t *ev)//Position TODO
     lt_remove_from_epfd(base->epfd, ev, ev->fd, NULL);
 
     min_heap_erase_(&base->timeheap, ev);
+
+    ev->deleted = 1;
 //    erase from heap
 //    free(ev);
-    //TODO readylist is too long?
+//TODO readylist is too long?
 }
 
 res_t
