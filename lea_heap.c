@@ -59,7 +59,21 @@ min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e)
         parent = (hole_index - 1) / 2;
     }
     s->p[hole_index] = e;
-    s->p[hole_index]->min_heap_idx = hole_index;//
+    s->p[hole_index]->min_heap_idx = hole_index;
+}
+
+void 
+min_heap_shift_up_unconditional_(min_heap_t* s, unsigned hole_index, event_t *e)
+{
+    unsigned parent = (hole_index - 1) / 2;
+    do {
+        s->p[hole_index] = s->p[parent];
+        s->p[hole_index]->min_heap_idx = hole_index;
+        hole_index = parent;
+        parent = (hole_index - 1) / 2;
+    } while (hole_index && min_heap_elem_greater(s->p[parent], e));
+    s->p[hole_index] = e;
+    s->p[hole_index]->min_heap_idx = hole_index;
 }
 
 void
@@ -91,4 +105,22 @@ int min_heap_reserve_(min_heap_t *s, unsigned n)
         s->a = a;
     }
     return 0;
+}
+
+int min_heap_erase_(min_heap_t *s, event_t *e)
+{
+    if (e->min_heap_idx != -1) {
+        event_t *last = s->p[--s->n];
+        unsigned parent = (e->ev_timeout_pos -1 ) / 2;
+        if (e->min_heap_idx > 0   &&  min_heap_elem_greater(s->p[parent], last) ) {
+            min_heap_shift_up_unconditional(s, e->min_heap_idx, last);
+        } else {
+            min_heap_shift_down_(s, e->min_heap_idx, last);
+        }
+        e->min_heap_idx = -1;
+
+        return 0;
+    } else {
+        return -1;
+    }
 }

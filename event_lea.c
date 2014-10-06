@@ -37,7 +37,7 @@ lt_base_init_set(base_t *base)
     return 0;
 }
 
-res_t
+static res_t
 lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 {
     res_t res;
@@ -57,7 +57,6 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
     res = epoll_ctl(epfd, EPOLL_CTL_ADD, mon_fd, &ev);
 	if(res) {
 		perror("epoll_ctl");
-		return res;
 	}
 
     return res;
@@ -233,7 +232,9 @@ lt_ev_process_and_moveout(base_t *base, lt_time_t nowtime)
 		if (lt_ev_check_timeout(event, nowtime)) {
             lt_remove_from_readylist(event, &base->readylist, &base->deletedlist);
             continue;
-        } else { 
+        } else if (event->deleted && 1){ //cluster some event and del it;
+            ;
+        } else {
             event->callback(event->fd, event->arg);
         }
     }
@@ -348,10 +349,26 @@ lt_base_free(base_t *base)
 }
 */
 
+static res_t
+lt_remove_from_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
+{
+    res_t res;
+
+    res = epoll_ctl(epfd, EPOLL_CTL_DEL, mon_fd, NULL);
+    if (res) {
+        perror("epoll_ctl DEL");
+    }
+
+    return res;
+}
 res_t
-lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, deleted_evlist_t *deletedlist)
+lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from ready to deleted
+        deleted_evlist_t *deletedlist)
 {
  //   evlist->hole_list[evlist->hole_len++] = &ev;//push a pos of ev to hole_list
+    //TODO
+    deletedlist->eventarray[deletedlist->event_len] = &readylist->eventarray[ev->pos_in_ready];
+
 
     return 0;
 }
@@ -360,6 +377,10 @@ void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
     lt_remove_from_readylist(ev, &base->readylist, &base->deletedlist);
+    lt_remove_from_epfd(base->epfd, ev, ev->fd, NULL);
+
+    min_heap_erase_(&base->timeheap, ev);
+//    erase from heap
 //    free(ev);
     //TODO readylist is too long?
 }

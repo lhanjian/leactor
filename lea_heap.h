@@ -13,4 +13,6 @@ int  min_heap_reserve_(min_heap_t *s, unsigned n);
 void min_heap_shift_up_(min_heap_t *s, unsigned hole_index, event_t *e);
 
 void min_heap_shift_down_(min_heap_t *s, unsigned hole_index, event_t *e);
+
+int  min_heap_erase_(min_heap_t *s, event_t *)
 #endif
