@@ -200,7 +200,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
         fprintf(stderr, "lt_add_to_evlist error");
         return NULL;
     }*/
-	if (timeout) {
+	if (timeout > 1) {
 		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
     }
     
