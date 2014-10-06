@@ -74,7 +74,7 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
     event_t *event;
 
     if (!deletedlist->event_len || deletedlist->event_len == -1) {
-        event = (event_t *)evlist->eventarray + evlist->event_len;
+        event = evlist->eventarray + evlist->event_len;
         event->pos_in_ready = evlist->event_len;
         evlist->event_len++;
 //        readylist->eventarray[readylist->event_len] = event;
@@ -253,7 +253,7 @@ lt_ev_process_and_moveout(base_t *base, lt_time_t nowtime)
     active_evlist_t *evlist = &base->activelist;
     for (int i = 0; i < len; i++) {//Why not use Tree?
 
-        event_t *event = *evlist->eventarray[i];
+        event_t *event = *evlist->eventarray + i;
         --evlist->event_len;//ev_persist  DONE/ev_oneshot  TODO
 
 		if (lt_ev_check_timeout(event, nowtime)) {
@@ -280,7 +280,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
 
 //    event_t **act_ev;
 	for (int i = 0; i < ready; i++) {
-        actlist->eventarray[i] = (event_t **)&ev_array[i].data.ptr;
+        actlist->eventarray[i] = (event_t *)ev_array[i].data.ptr;
 //			readylist->eventarray[i];
 	}
 	actlist->event_len = ready;
@@ -382,8 +382,8 @@ lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from rea
         deleted_evlist_t *deletedlist)
 {
  //   evlist->hole_list[evlist->hole_len++] = &ev;//push a pos of ev to hole_list
-    deletedlist->eventarray[deletedlist->event_len] = 
-        &readylist->eventarray[ev->pos_in_ready];
+    deletedlist->eventarray[deletedlist->event_len] =  ev;
+//       &readylist->eventarray[ev->pos_in_ready];
 
     readylist->event_len--;
     deletedlist->event_len++; 

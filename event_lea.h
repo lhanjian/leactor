@@ -63,7 +63,7 @@ typedef struct min_heap {
 
 typedef struct {
     int event_len;
-    event_t **eventarray;
+    event_t *eventarray;
     event_t *event_head;
 //   int             hole_len;
 //    event_t      ***hole_list;//deleted position
@@ -71,13 +71,13 @@ typedef struct {
 
 typedef struct {
     int event_len;
-    event_t ***eventarray;
+    event_t **eventarray;
 } active_evlist_t;
 
 
 typedef struct {
     int event_len;
-    event_t ***eventarray;
+    event_t **eventarray;
 } deleted_evlist_t;
 
 typedef struct base {
