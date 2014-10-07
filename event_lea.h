@@ -144,9 +144,9 @@ typedef struct lt_memory_pool {
 } lt_memory_pool_t;
 
 
-lt_memory_pool_t * lt_new_memory_pool(size_t one_item_size);
-void *lt_alloc(lt_memory_pool_t *pool);
-void lt_free(lt_memory_pool_t *pool, void *object_contents);
-void lt_delete_memory_pool(lt_memory_pool_t *pool);
+lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size);
+void*             lt_alloc(lt_memory_pool_t *pool);
+void              lt_free(lt_memory_pool_t *pool, void *object_contents);
+void              lt_destroy_memory_pool(lt_memory_pool_t *pool);
 #endif
 

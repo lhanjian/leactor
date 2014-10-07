@@ -73,11 +73,13 @@ static void init_pool_list(lt_memory_pool_t *pool)
     pool->all_item = malloc(EVLIST_LEN * size_of_pool_with_all_item);
     pool->head = pool->all_item;
     pool->pos = pool->head;
-    pool->tail = (lt_memory_piece_t *)((char *)pool->pos + size_of_pool_with_all_item * EVLIST_LEN);
+    pool->tail = (lt_memory_piece_t *)
+        ((char *)pool->pos + size_of_pool_with_all_item * EVLIST_LEN);
 
     lt_memory_piece_t *p = pool->head;
     for (int i = 0; i < EVLIST_LEN - 1; i++) {
-        p->next = (lt_memory_piece_t *)((char *)p + size_of_pool_with_all_item);
+        p->next = (lt_memory_piece_t *)
+            ((char *)p + size_of_pool_with_all_item);
         p = p->next;
     }
     p->next = NULL;
@@ -95,10 +97,11 @@ lt_free(lt_memory_pool_t *pool, void *object_contents)
 }
 
 
-void lt_delete_memory_pool(lt_memory_pool_t *pool)
+void lt_destroy_memory_pool(lt_memory_pool_t *pool)
 {
-    
-
+    free(pool->all_item);
+    free(pool->next);//TODO cirular list
+    free(pool);
 
 };//TODO
 
