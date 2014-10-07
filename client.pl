@@ -33,6 +33,7 @@ sub recvvv {
 sub senddd {
     threads->create(sub {
             threads->detach(); 
+
             while (1) {
                 print "send S\n";
                 my $data = "send to SERVER:dATA\n";
