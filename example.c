@@ -84,6 +84,7 @@ int incoming(int test, void *arg)
         return -1;;
     }
 
+    ex_nonblocking(*new_in_fd);
     eventarray[*new_in_fd] = lt_io_add(base, *new_in_fd, LV_FDRD|LV_CONN, play_back, new_in_fd, NO_TIMEOUT);
     n++;
 
@@ -95,19 +96,22 @@ int play_back(int test, void *arg)
     char in_buff[32] = "testlhjtest";
 
     int in_fd = *(int *)arg;
-
-    char rcv_buff[32];
+    int rcv_size = 32;
+    char rcv_buff[33];
     int rv;
 
-    if ((rv = recv(in_fd, rcv_buff, 32, 0)) < 0) {
+    if ((rv = recv(in_fd, rcv_buff, rcv_size, 0)) < 0) {
         perror("send");
         return -1;
     } else if (!rv) {
         lt_io_remove(base, eventarray[in_fd]);
         close(in_fd);
-    } else /*>0*/{
-        rcv_buff[31] = '\0';
+    } else if (rv != rcv_size) {
+        printf("rcv_size:%d\n", rv);
+        rcv_buff[33] = '\0';
         write(STDOUT_FILENO, rcv_buff, rv);
+    } else if (rv == rcv_size) {
+        printf("perfect:%d\n", rv);
     }
 
     if ((rv = send(in_fd, in_buff, 32, 0)) < 0) {

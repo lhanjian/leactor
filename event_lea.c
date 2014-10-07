@@ -224,7 +224,7 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
         fprintf(stderr, "lt_add_to_evlist error");
         return NULL;
     }*/
-	if (timeout > 0) {
+	if (timeout >= 0) {
 		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
     } else {
         event->min_heap_idx = -1;
@@ -259,7 +259,7 @@ lt_ev_process_and_moveout(base_t *base, lt_time_t nowtime)
 		if (lt_ev_check_timeout(event, nowtime)) {
             lt_remove_from_readylist(event, &base->readylist, &base->deletedlist);
             continue;
-        } else if (event->deleted && 1){ //cluster some event and del it;
+        } else if (event->deleted == 1){ //cluster some event and del it;
             //TODO:clear it from memory?;
         } else {
             event->callback(event->fd, event->arg);
@@ -400,13 +400,14 @@ lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from rea
 void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
-    min_heap_erase_(&base->timeheap, ev);//First erase heap
+    if (ev->min_heap_idx != -1) {
+        min_heap_erase_(&base->timeheap, ev);//First erase heap
+    } 
 
     lt_remove_from_readylist(ev, &base->readylist, &base->deletedlist);
-    lt_remove_from_epfd(base->epfd, ev, ev->fd, 0);
-
-
-    ev->deleted = 1;
+    lt_remove_from_epfd(base->epfd, ev, ev->fd, 0);//For active event, it's different with Libevent. 
+    ev->deleted = 1;//For active event, it's different with Libevent. 
+//TODO 
 //    erase from heap
 //    free(ev);
 //TODO readylist is too long?
