@@ -293,16 +293,19 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 
     long long diff;
 //    int i;
-    int ready; 
+    int ready = 0;
     //get time now 
     start = lt_gettime();
+
+    int epevents_len = INIT_EPEV;
+
     for (;;) {
         /*
         int errsv = errno;
         puts(strerror(errsv));
         fprintf(stderr, "sth failed errsv:%d\n", errsv);
         */
-        struct epoll_event epevents[INIT_EPEV];
+        struct epoll_event epevents[epevents_len];
 		//core dispatch
         ready = epoll_wait(base->epfd, /*base->*/epevents, 
 				/*base->readylist.event_len*/INIT_EPEV, -1);
