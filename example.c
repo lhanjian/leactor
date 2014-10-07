@@ -7,6 +7,10 @@
 #include <sys/types.h>
 #include <string.h>
 #include <netdb.h>
+#include <fcntl.h>
+
+static inline int ex_nonblocking(int fd)
+{ return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL)|O_NONBLOCK);};
 
 int incoming(int, void *);
 int play_back(int, void *);
@@ -17,7 +21,6 @@ int n = 0;
 
 int main(void)
 {
-    int my_sock;
     
     struct addrinfo hints, *res;
     memset(&hints, 0, sizeof hints);
@@ -30,35 +33,38 @@ int main(void)
         fprintf(stderr, "gai:%s\n", gai_strerror(rv));
     }
 
+    int listen_sock;
     for (struct addrinfo *p = res; p != NULL; p = p->ai_next) {
-        my_sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (my_sock == -1)  {
+        listen_sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (listen_sock == -1)  {
             perror("skt");
             continue;
         }
 
         int yes = 1;
-        if (setsockopt(my_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
+        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
             perror("sso");
             exit(1);
         }
         
-        if ( bind(my_sock, p->ai_addr, p->ai_addrlen) == -1 ) {
-            close(my_sock);
+        if (bind(listen_sock, p->ai_addr, p->ai_addrlen) == -1 ) {
+            close(listen_sock);
             perror("bind");
             continue;
         }
     }
     freeaddrinfo(res);
 
-    if (listen(my_sock, SOMAXCONN) == -1) {
+    if (listen(listen_sock, SOMAXCONN) == -1) {
         perror("listen");
         exit(1);
     }
 
+    ex_nonblocking(listen_sock);
+
     base = lt_base_init();
     
-    lt_io_add(base, my_sock, LV_FDRD, incoming, &my_sock, NO_TIMEOUT);
+    lt_io_add(base, listen_sock, LV_FDRD, incoming, &listen_sock, NO_TIMEOUT);
 
     lt_base_loop(base, NO_TIMEOUT);
 

@@ -4,7 +4,7 @@
 
 static void init_pool_list(lt_memory_pool_t *pool);
 
-typedef struct {
+/*typedef struct {
     size_t one_item_size;
 
     lt_memory_piece_t *head;
@@ -14,7 +14,7 @@ typedef struct {
     void *all_item;
 
     lt_memory_pool_t  *next;
-} lt_memory_pool_t;
+} lt_memory_pool_t;*/
 
 lt_memory_pool_t *
 lt_new_memory_pool(size_t one_item_size)
@@ -32,7 +32,7 @@ lt_new_memory_pool(size_t one_item_size)
 void *
 lt_alloc(lt_memory_pool_t *pool)
 {
-    char *allo_rv;
+    char *alloc_rv;
 
     if (((lt_memory_piece_t *)(pool->pos))->next) {
         alloc_rv = (char *)pool->pos->next + sizeof(lt_memory_piece_t);
@@ -71,29 +71,27 @@ static void init_pool_list(lt_memory_pool_t *pool)
        /*EVLIST_LEN */ (pool->one_item_size  + sizeof(lt_memory_piece_t));
 
     pool->all_item = malloc(EVLIST_LEN * size_of_pool_with_all_item);
-    pool->head = all_item;
+    pool->head = pool->all_item;
     pool->pos = pool->head;
-    pool->tail = (char *)pool->pos + size_of_pool_with_all_item;
+    pool->tail = (lt_memory_piece_t *)((char *)pool->pos + size_of_pool_with_all_item * EVLIST_LEN);
 
     lt_memory_piece_t *p = pool->head;
     for (int i = 0; i < EVLIST_LEN - 1; i++) {
-        p->next = (char *)p + size_of_pool_with_all_item;
+        p->next = (lt_memory_piece_t *)((char *)p + size_of_pool_with_all_item);
         p = p->next;
     }
     p->next = NULL;
 }
 
-
 void 
 lt_free(lt_memory_pool_t *pool, void *object_contents)
 {
 //    void *old_next = pool->next;
-
     char *object_pos = (char *)object_contents - pool->one_item_size;
 
-    char *old_next = pool->pos->next;
-    pool->pos->next = object_pos;
-    (lt_memory_piece_t *)object_pos->next = old_next;
+    lt_memory_piece_t *old_next = pool->pos->next;
+    pool->pos->next = (lt_memory_piece_t *)object_pos;
+    ((lt_memory_piece_t *)object_pos)->next = old_next;
 }
 
 
