@@ -107,7 +107,7 @@ lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
     if (evlist->event_len == -1)/* || evlist->event_len == EVLIST_LEN)*/ {
         evlist->event_len = 0;
     } else if (evlist->event_len == EVLIST_LEN) {
-        //TODO
+        //ODO
         //dsfasdfdfasfc
         //make a memory pool?
     }
@@ -133,6 +133,7 @@ lt_add_to_evlist(ready_evlist_t *readylist, deleted_evlist_t* deletedlist,
 
     return event;
 }
+
 int 
 epoll_init()
 {
@@ -213,7 +214,8 @@ lt_io_add(base_t *base, int fd, flag_t flag_set,
         func_t callback, void *arg, to_t timeout)
 {
 //	event_t *event = base->readylist.eventarray[base->readylist.event_len];
-    event_t *event = lt_add_to_evlist(/*event,*/ &base->readylist, &base->deletedlist, 
+    event_t *event = lt_add_to_evlist(
+            &base->readylist, &base->deletedlist, 
             flag_set, fd, callback, arg);
 /*    if (event == NULL) {
         perror("malloc event");
@@ -308,7 +310,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
         struct epoll_event epevents[epevents_len];
 		//core dispatch
         ready = epoll_wait(base->epfd, /*base->*/epevents, 
-				/*base->readylist.event_len*/INIT_EPEV, -1);
+				/*base->readylist.event_len*/epevents_len, -1);
         if (ready == -1) {
 			perror("epoll_wait");
             return -1;
@@ -324,8 +326,12 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 			break;
 		}
 		lt_loop_init_actlist(base, epevents, ready);//should init ,but not only insert ready to action.
+        //another option: 
 
         lt_ev_process_and_moveout(base, after);
+
+        if (ready == epevents_len)
+            epevents_len *= 2;
     }
 
     return 0;

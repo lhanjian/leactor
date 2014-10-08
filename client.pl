@@ -36,7 +36,8 @@ sub senddd {
 
             while (1) {
                 print "send S\n";
-                my $data = "send to SERVER:dATA\n";
+                my $data = "send to SERVER:dATA";
+                $sock->send($data) or die "sendF: $!";
                 $sock->send($data) or die "sendF: $!";
                 print "send O\n";
                 sleep 5;

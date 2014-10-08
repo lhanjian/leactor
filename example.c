@@ -93,28 +93,37 @@ int incoming(int test, void *arg)
 
 int play_back(int test, void *arg)
 {
-    char in_buff[32] = "testlhjtest";
+//    char in_buff[32] = "testlhjtest";
 
     int in_fd = *(int *)arg;
     int rcv_size = 32;
-    char rcv_buff[33];
     int rv;
+    struct iovec vector_buf[2];
 
-    if ((rv = recv(in_fd, rcv_buff, rcv_size, 0)) < 0) {
+    char iov_buff[2][10];
+    vector_buf[0].iov_base = iov_buff[0];
+    vector_buf[0].iov_len  = 5;
+    vector_buf[1].iov_base = iov_buff[1];
+    vector_buf[1].iov_len  = 5;
+    
+    rv = readv(in_fd, vector_buf, 2);
+    if (rv < 0) {
         perror("send");
         return -1;
     } else if (!rv) {
         lt_io_remove(base, eventarray[in_fd]);
         close(in_fd);
     } else if (rv != rcv_size) {
+
         printf("rcv_size:%d\n", rv);
-        rcv_buff[33] = '\0';
-        write(STDOUT_FILENO, rcv_buff, rv);
+        printf("ZERO:%s\nEND01\n", iov_buff[0]);
+        printf("ZERO:%s\nEND02\n", iov_buff[1]);
     } else if (rv == rcv_size) {
         printf("perfect:%d\n", rv);
     }
 
-    if ((rv = send(in_fd, in_buff, 32, 0)) < 0) {
+    char testf[] = "eafdsfavEND\n";
+    if ((rv = send(in_fd, testf, sizeof (testf), 0)) < 0) {
         fprintf(stderr, "send rv:%d\n", rv);
         perror("send");
         return -1;
