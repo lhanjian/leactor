@@ -101,22 +101,23 @@ int play_back(int test, void *arg)
     int rv;
     struct iovec vector_buf[2];
 
-    char iov_buff[2][10];
+    char iov_buff[2][rcv_size];
     vector_buf[0].iov_base = iov_buff[0];
-    vector_buf[0].iov_len  = 5;
+    vector_buf[0].iov_len  = rcv_size;
     vector_buf[1].iov_base = iov_buff[1];
-    vector_buf[1].iov_len  = 5;
+    vector_buf[1].iov_len  = rcv_size;
     
-    rv = readv(in_fd, vector_buf, 2);
+   rv = readv(in_fd, vector_buf, 1);
     if (rv < 0) {
-        lt_io_remove(base, );
-        perror("send");
-        return -1;
+        perror("readv->break");
     } else if (!rv) {
-        lt_io_remove(base, eventarray[in_fd]);
+//        lt_io_remove(base, eventarray[in_fd]);
+        perror("readv->0");
         close(in_fd);
     } else if (rv != rcv_size) {
-
+        if (!read(in_fd, iov_buff[1], rcv_size)) {
+            perror("readddddddddddd\n");
+        }
         printf("rcv_size:%d\n", rv);
         printf("ZERO:%s\nEND01\n", iov_buff[0]);
         printf("ZERO:%s\nEND02\n", iov_buff[1]);

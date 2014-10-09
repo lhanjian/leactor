@@ -40,7 +40,6 @@ sub senddd {
                 $sock->send($data) or die "sendF: $!";
                 $sock->send($data) or die "sendF: $!";
                 print "send O\n";
-                sleep 5;
             }
 
         });
