@@ -19,27 +19,28 @@ lt_alloc_evlist(evlist_t *evlist)
 }
     */
 
+    /*
 res_t
 lt_base_init_set(base_t *base)
 {
-    /*
 	if (lt_alloc_evlist(&base->readylist) == -1)
 		return -1;
 	if (lt_alloc_evlist(&base->activelist) == -1) {
 //		free(&base->activelist);
 		return -1;
 	}
-    */
 
 
     return 0;
 }
+    */
 
 static res_t
 lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 {
     res_t res;
-    struct epoll_event ev;//
+
+    struct epoll_event ev;
 
     ev.events = 0;
     if (flag & LV_FDRD)
@@ -61,7 +62,7 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 }
 
 static event_t *
-lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event_t *event, 
+lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//event_t *event, 
         flag_t flag_set, int fd, //int epfd,
         func_t callback, void *arg, int deleted)
 {
@@ -71,8 +72,16 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
         return -1;
     }
     */
-    event_t *event;
+    event_t *event = lt_alloc(evlist->event_pool);
 
+    event->callback = callback;
+    event->arg = arg;
+    event->flag = flag_set;
+    event->fd = fd;
+    event->deleted = deleted;
+
+    return event;
+    /*
     if (!deletedlist->event_len || deletedlist->event_len == -1) {
         event = evlist->eventarray + evlist->event_len;
         event->pos_in_ready = evlist->event_len;
@@ -85,15 +94,10 @@ lt_ev_constructor_(ready_evlist_t *evlist, deleted_evlist_t *deletedlist,//event
         deletedlist->event_len--;
 //        *(evlist->hole_list[evlist->hole_len-- - 1]) = event;//pop a ev
     }
+        */
 
-    event->callback = callback;
-    event->arg = arg;
-    event->flag = flag_set;
-    event->fd = fd;
-    event->deleted = deleted;
 //    event->endtime
 //event->min_heap_idx
-    return event;
 }
 
 static inline res_t
@@ -118,18 +122,18 @@ lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
 //evlist belongs to base, but it can make evlist_t opaque,
 //so pass the evlist to this routine
 static event_t *
-lt_add_to_evlist(ready_evlist_t *readylist, deleted_evlist_t* deletedlist,
-    flag_t flag_set, int fd, func_t callback, void *arg)
+lt_add_to_readylist(ready_evlist_t *readylist, //deleted_evlist_t* deletedlist,
+  flag_t flag_set, int fd, func_t callback, void *arg)
 {
     res_t res;
-
-    res = lt_eventarray_constructor_(readylist);
+/* res = lt_eventarray_constructor_(readylist);
     if (res == -1)
-        return NULL;
-
-    event_t *event = lt_ev_constructor_(readylist, deletedlist, flag_set, fd, callback, arg, DELETED);
+        return NULL; */
+    event_t *event = lt_ev_constructor_(readylist, //deletedlist, 
+            flag_set, fd, callback, arg, UNDELETED);
     if (event == NULL)
         return NULL;
+    readylist->event_len++;
 
     return event;
 }
@@ -152,8 +156,8 @@ lt_base_init(void)
 //alloc a memory for a new base 
     base_t *base = malloc(sizeof(base_t));
     if (!base) {
-//        err_realloc(base);//TODO
         return NULL;
+//        err_realloc(base);//TODO
     }
 
 //epoll create a epfd , then copy it to base
@@ -166,21 +170,24 @@ lt_base_init(void)
 
     base->epfd = epfd;
 
-    base->readylist.eventarray = malloc(sizeof(event_t) * EVLIST_LEN);//event_t lt_alloc TODO:optimization
-    if (base->readylist.eventarray == NULL) {
+//    base->readylist.eventarray = malloc(sizeof(event_t) * EVLIST_LEN);//event_t lt_alloc TODO:optimization
+/*    if (base->readylist.eventarray == NULL) {
         perror("malloc ready eventarray");
         return NULL;
-    }
-    base->readylist.event_len = 0;
+        }
+*/  
+//    base->readylist.event_len = 0;
 
-    base->activelist.eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);
+/*    base->activelist.eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);
     if (base->activelist.eventarray == NULL) {
         perror("malloc active eventarray");
         free(base->readylist.eventarray);
         return NULL;
     }
     base->activelist.event_len = 0;
+    */
 
+    /*
     base->deletedlist.eventarray = malloc(sizeof(event_t *) * EVLIST_LEN);
     if (base->deletedlist.eventarray == NULL) {
         perror("malloc deleted eventarray");
@@ -188,7 +195,7 @@ lt_base_init(void)
         free(base->deletedlist.eventarray);
         return NULL;
     }
-    base->activelist.event_len = 0;
+    */
 
             //malloc(realloc(evlist->eventarray,//TODO realloc is wrong
 //                (sizeof(event_t)) * (evlist->event_len>>2));
@@ -211,12 +218,11 @@ lt_base_init(void)
 //evlist using TCP-like buffer window？
 //if add the same fd?
 event_t *
-lt_io_add(base_t *base, int fd, flag_t flag_set,
-        func_t callback, void *arg, to_t timeout)
+lt_io_add(base_t *base, int   fd, flag_t flag_set,
+       func_t callback, void *arg, to_t  timeout)
 {
 //	event_t *event = base->readylist.eventarray[base->readylist.event_len];
-    event_t *event = lt_add_to_evlist(
-            &base->readylist, &base->deletedlist, 
+    event_t *event = lt_add_to_readylist(&base->readylist, 
             flag_set, fd, callback, arg);
 /*    if (event == NULL) {
         perror("malloc event");
@@ -250,22 +256,22 @@ lt_io_mod(base_t *base, event_t *ev, flag_t flag_set,
 
 
 static void//res_t
-lt_ev_process_and_moveout(base_t *base, lt_time_t nowtime)
+lt_ev_process_and_moveout(active_evlist_t *actlist, lt_time_t nowtime)
 {
-    int len = base->activelist.event_len;
-    active_evlist_t *evlist = &base->activelist;
-    for (int i = 0; i < len; i++) {//Why not use Tree?
-
-        event_t *event = *evlist->eventarray + i;
-        --evlist->event_len;//ev_persist  DONE/ev_oneshot  TODO
-
+//    int len = actlist->event_len;
+    
+    for (event_t *event = actlist->head; 
+            event == NULL; 
+            event = event->next_active_ev) {//Why not use Tree?
+ //       actlist->event_len--;//ev_persist  DONE/ev_oneshot  TODO
 		if (lt_ev_check_timeout(event, nowtime)) {
-            lt_remove_from_readylist(event, &base->readylist, &base->deletedlist);
-            continue;
-        } else if (event->deleted == 1){ //cluster some event and del it;
+            //lt_remove_from_readylist(event, &base->readylist, &base->deletedlist);
+            event->deleted = 1;
+        } else if (event->deleted){ //cluster some event and del it;
             //TODO:clear it from memory?;
         } else {
             event->callback(event->fd, event->arg);
+            event->deleted = event->flag & EV_ONESHOT;//TODO
         }
     }
     return;
@@ -329,7 +335,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 		lt_loop_init_actlist(base, epevents, ready);//should init ,but not only insert ready to action.
         //another option: 
 
-        lt_ev_process_and_moveout(base, after);
+//        lt_ev_process_and_moveout(, after);
 
         if (ready == epevents_len)
             epevents_len *= 2;
@@ -387,20 +393,21 @@ lt_remove_from_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
     return res;
 }
 
-res_t
-lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from ready to deleted
-        deleted_evlist_t *deletedlist)
+void//res_t
+lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist) 
+    //move from ready to deleted
+//        deleted_evlist_t *deletedlist)
 {
- //   evlist->hole_list[evlist->hole_len++] = &ev;//push a pos of ev to hole_list
-    deletedlist->eventarray[deletedlist->event_len] =  ev;
+ //   evlist->hole_list[evlist->hole_len++] = &ev;
+ //   //push a pos of ev to hole_list
+//    deletedlist->eventarray[deletedlist->event_len] =  ev;
 //       &readylist->eventarray[ev->pos_in_ready];
 
+    lt_free(readylist->event_pool, ev);
     readylist->event_len--;
-    deletedlist->event_len++; 
-
+//    readylist->event_len--;
+//    deletedlist->event_len++; 
     //TODO memory pool
-
-    return 0;
 }
 
 void//res_t
@@ -410,7 +417,7 @@ lt_io_remove(base_t *base, event_t *ev)//Position TODO
         min_heap_erase_(&base->timeheap, ev);//First erase heap
     } 
 
-    lt_remove_from_readylist(ev, &base->readylist, &base->deletedlist);
+    lt_remove_from_readylist(ev, &base->readylist);
     lt_remove_from_epfd(base->epfd, ev, ev->fd, 0);//For active event, it's different with Libevent. 
     ev->deleted = 1;//For active event, it's different with Libevent. 
 //TODO 

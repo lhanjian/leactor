@@ -123,6 +123,9 @@ int play_back(int test, void *arg)
         printf("ZERO:%s\nEND02\n", iov_buff[1]);
     } else if (rv == rcv_size) {
         printf("perfect:%d\n", rv);
+        printf("rcv_size:%d\n", rv);
+        printf("ZERO:%s\nEND01\n", iov_buff[0]);
+        printf("ZERO:%s\nEND02\n", iov_buff[1]);
     }
 
     char testf[] = "eafdsfavEND\n";

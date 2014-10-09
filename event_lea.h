@@ -24,7 +24,9 @@
 #define NO_TIMEOUT (-1L)
 #define NULL_ARG (NULL)
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
-#define DELETED (0)
+#define UNDELETED (0)
+
+#define EV_ONESHOT (1)
 //#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
@@ -42,16 +44,39 @@ typedef int res_t;
 } res_t;*/
 typedef long to_t;
 
+typedef struct lt_memory_piece {
+    struct lt_memory_piece *next;
+} lt_memory_piece_t;
+
+typedef struct lt_memory_pool {
+    size_t one_item_size;
+
+    lt_memory_piece_t *head;
+    lt_memory_piece_t *pos;
+    lt_memory_piece_t *tail;
+
+    void *all_item;
+
+    struct lt_memory_pool  *next;
+} lt_memory_pool_t, lt_memory_manager_t;
+
+
+lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size, lt_memory_manager_t *manager);
+void*             lt_alloc(lt_memory_pool_t *pool);
+void              lt_free(lt_memory_pool_t *pool, void *object_contents);
+void              lt_destroy_memory_pool(lt_memory_pool_t *pool);
+
 typedef int flag_t;
 typedef struct event {
-    func_t       callback;
-    void        *arg;
-    flag_t       flag;
-    int          fd; 
-    int          min_heap_idx;
-    lt_time_t    endtime;
-    int          deleted;
-    int          pos_in_ready;
+    func_t        callback;
+    void         *arg;
+    flag_t        flag;
+    int           fd; 
+    int           min_heap_idx;
+    lt_time_t     endtime;
+    int           deleted;
+    int           pos_in_ready;
+    struct event *next_active_ev;
 //    int     epfd;
 } event_t;
 
@@ -63,8 +88,7 @@ typedef struct min_heap {
 
 typedef struct {
     int event_len;
-    event_t *eventarray;
-    event_t *event_head;
+    lt_memory_pool_t *event_pool;
 //   int             hole_len;
 //    event_t      ***hole_list;//deleted position
 } ready_evlist_t;//, activelist_t, evlist_t;
@@ -72,6 +96,7 @@ typedef struct {
 typedef struct {
     int event_len;
     event_t **eventarray;
+    event_t *head;
 } active_evlist_t;
 
 
@@ -103,7 +128,7 @@ res_t     lt_base_loop(base_t *base, long timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 //void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
-res_t     lt_remove_from_readylist(event_t *ev, ready_evlist_t *evlist, deleted_evlist_t *deletedlist);
+//res_t     lt_remove_from_readylist(event_t *ev, ready_evlist_t *evlist);
 //res_t     lt_remove_from_readylist(event_t *ev, active_evlist_t *evlist);
 #define time_a_gt_b(X,Y,Z) ((long long)X Y (unsigned long long)Z)
 //#define lt_time_add(X, Y) ((lt_time_t)(X))
@@ -127,26 +152,5 @@ res_t base_dispatch(base_t *base_dispatch
 /*
 res_t base_free(base_t *base_rlve);
 */
-typedef struct lt_memory_piece {
-    struct lt_memory_piece *next;
-} lt_memory_piece_t;
-
-typedef struct lt_memory_pool {
-    size_t one_item_size;
-
-    lt_memory_piece_t *head;
-    lt_memory_piece_t *pos;
-    lt_memory_piece_t *tail;
-
-    void *all_item;
-
-    struct lt_memory_pool  *next;
-} lt_memory_pool_t;
-
-
-lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size);
-void*             lt_alloc(lt_memory_pool_t *pool);
-void              lt_free(lt_memory_pool_t *pool, void *object_contents);
-void              lt_destroy_memory_pool(lt_memory_pool_t *pool);
 #endif
 

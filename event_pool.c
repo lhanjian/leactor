@@ -17,7 +17,7 @@ static void init_pool_list(lt_memory_pool_t *pool);
 } lt_memory_pool_t;*/
 
 lt_memory_pool_t *
-lt_new_memory_pool(size_t one_item_size)
+lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager)
 {
 //    lt_memory_pool_t *new = 
     lt_memory_pool_t *new = malloc(sizeof(lt_memory_pool_t));
@@ -25,6 +25,8 @@ lt_new_memory_pool(size_t one_item_size)
     new->one_item_size = one_item_size;
 
     init_pool_list(new);
+
+    new->next = manager;
 
     return new;
 }
@@ -105,7 +107,9 @@ void lt_destroy_memory_pool(lt_memory_pool_t *pool)
 
 };//TODO
 
-
-
-
-
+lt_memory_pool_t *lt_new_memory_pool_manager(void)
+{
+    lt_memory_pool_t *manager = malloc(sizeof(lt_memory_pool_t)); 
+    manager = NULL;
+    return manager;
+}
