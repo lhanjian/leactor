@@ -60,7 +60,8 @@ typedef struct lt_memory_pool {
     struct lt_memory_pool  *next;
 } lt_memory_pool_t, lt_memory_manager_t;
 
-
+lt_memory_manager_t *
+                  lt_new_memory_pool_manager(void);
 lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size, lt_memory_manager_t *manager);
 void*             lt_alloc(lt_memory_pool_t *pool);
 void              lt_free(lt_memory_pool_t *pool, void *object_contents);

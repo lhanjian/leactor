@@ -26,7 +26,11 @@ lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager)
 
     init_pool_list(new);
 
-    new->next = manager;
+    if (manager->next == NULL) {
+        manager->next = new;
+    }
+
+    new->next = manager->next;
 
     return new;
 }
@@ -110,6 +114,6 @@ void lt_destroy_memory_pool(lt_memory_pool_t *pool)
 lt_memory_pool_t *lt_new_memory_pool_manager(void)
 {
     lt_memory_pool_t *manager = malloc(sizeof(lt_memory_pool_t)); 
-    manager = NULL;
+    manager->next = NULL;
     return manager;
 }
