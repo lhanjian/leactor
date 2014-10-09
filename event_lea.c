@@ -99,16 +99,15 @@ lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//ev
 //    event->endtime
 //event->min_heap_idx
 }
-
+/*
 static inline res_t
 lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
 {
-/* 	if (!evlist) {
+ 	if (!evlist) {
 		if (lt_alloc_evlist(evlist) == -1)
 			return -1;
             }
-*/	
-    if (evlist->event_len == -1)/* || evlist->event_len == EVLIST_LEN)*/ {
+    if (evlist->event_len == -1) || evlist->event_len == EVLIST_LEN){
         evlist->event_len = 0;
     } else if (evlist->event_len == EVLIST_LEN) {
         //ODO
@@ -119,6 +118,7 @@ lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
     return 0;
 }
 
+*/	
 //evlist belongs to base, but it can make evlist_t opaque,
 //so pass the evlist to this routine
 static event_t *
