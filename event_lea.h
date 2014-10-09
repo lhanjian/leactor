@@ -63,7 +63,7 @@ typedef struct lt_memory_pool {
 lt_memory_manager_t *
                   lt_new_memory_pool_manager(void);
 lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size, lt_memory_manager_t *manager);
-void*             lt_alloc(lt_memory_pool_t *pool);
+void*             lt_alloc(lt_memory_pool_t *pool, lt_memory_manager_t *manager);
 void              lt_free(lt_memory_pool_t *pool, void *object_contents);
 void              lt_destroy_memory_pool(lt_memory_pool_t *pool);
 
@@ -90,6 +90,7 @@ typedef struct min_heap {
 typedef struct {
     int event_len;
     lt_memory_pool_t *event_pool;
+    lt_memory_pool_t *event_pool_manager;
 //   int             hole_len;
 //    event_t      ***hole_list;//deleted position
 } ready_evlist_t;//, activelist_t, evlist_t;

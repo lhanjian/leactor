@@ -36,7 +36,7 @@ lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager)
 }
 
 void *
-lt_alloc(lt_memory_pool_t *pool)
+lt_alloc(lt_memory_pool_t *pool, lt_memory_pool_t *manager)
 {
     char *alloc_rv;
 
@@ -44,10 +44,10 @@ lt_alloc(lt_memory_pool_t *pool)
         alloc_rv = (char *)pool->pos->next + sizeof(lt_memory_piece_t);
         pool->pos = pool->pos->next;
     } else {
-        pool->next = lt_new_memory_pool(pool->one_item_size);
+        pool->next = lt_new_memory_pool(pool->one_item_size, manager);
         pool = pool->next;//单向循环或者双向?TODO
 
-        alloc_rv = lt_alloc(pool);
+        alloc_rv = lt_alloc(pool, manager);
     }
 
     return alloc_rv;

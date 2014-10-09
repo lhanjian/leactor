@@ -72,7 +72,7 @@ lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//ev
         return -1;
     }
     */
-    event_t *event = lt_alloc(evlist->event_pool);
+    event_t *event = lt_alloc(evlist->event_pool, evlist->event_pool_manager);
 
     event->callback = callback;
     event->arg = arg;
