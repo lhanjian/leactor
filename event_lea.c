@@ -399,7 +399,6 @@ lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist, //move from rea
 
     //TODO memory pool
 
-
     return 0;
 }
 
