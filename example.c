@@ -17,7 +17,8 @@ int play_back(int, void *);
 
 base_t *base;
 event_t *eventarray[128];
-int n = 0;
+int n = 0; 
+int listen_sock;
 
 int main(void)
 {
@@ -33,7 +34,6 @@ int main(void)
         fprintf(stderr, "gai:%s\n", gai_strerror(rv));
     }
 
-    int listen_sock;
     for (struct addrinfo *p = res; p != NULL; p = p->ai_next) {
         listen_sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (listen_sock == -1)  {
@@ -64,7 +64,8 @@ int main(void)
 
     base = lt_base_init();
     
-    lt_io_add(base, listen_sock, LV_FDRD, incoming, &listen_sock, NO_TIMEOUT);
+    eventarray[listen_sock] = lt_io_add(base, listen_sock, LV_FDRD, incoming, 
+            &listen_sock, NO_TIMEOUT);
 
     lt_base_loop(base, NO_TIMEOUT);
 
@@ -108,6 +109,7 @@ int play_back(int test, void *arg)
     
     rv = readv(in_fd, vector_buf, 2);
     if (rv < 0) {
+        lt_io_remove(base, );
         perror("send");
         return -1;
     } else if (!rv) {
