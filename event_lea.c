@@ -188,6 +188,7 @@ lt_base_init(void)
         free(base->deletedlist.eventarray);
         return NULL;
     }
+    base->activelist.event_len = 0;
 
             //malloc(realloc(evlist->eventarray,//TODO realloc is wrong
 //                (sizeof(event_t)) * (evlist->event_len>>2));
