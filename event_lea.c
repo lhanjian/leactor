@@ -81,6 +81,7 @@ lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//ev
     event->deleted = deleted;
 
     return event;
+}
     /*
     if (!deletedlist->event_len || deletedlist->event_len == -1) {
         event = evlist->eventarray + evlist->event_len;
@@ -98,7 +99,6 @@ lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//ev
 
 //    event->endtime
 //event->min_heap_idx
-}
 /*
 static inline res_t
 lt_eventarray_constructor_(ready_evlist_t *evlist)//ready event
@@ -169,7 +169,14 @@ lt_base_init(void)
     }
 
     base->epfd = epfd;
+    base->readylist.event_pool_manager = lt_new_memory_pool_manager();
+    base->readylist.event_pool = 
+        lt_new_memory_pool(sizeof(event_t), base->readylist.event_pool);
 
+    min_heap_constructor_(&base->timeheap);
+
+    return base;
+}
 //    base->readylist.eventarray = malloc(sizeof(event_t) * EVLIST_LEN);//event_t lt_alloc TODO:optimization
 /*    if (base->readylist.eventarray == NULL) {
         perror("malloc ready eventarray");
@@ -200,7 +207,6 @@ lt_base_init(void)
             //malloc(realloc(evlist->eventarray,//TODO realloc is wrong
 //                (sizeof(event_t)) * (evlist->event_len>>2));
 //init base set //    lt_base_init_set(base);
-    min_heap_constructor_(&base->timeheap);
 //init epoll_event 
 //Fxxk you, libevent;
 //	base->epevent = malloc(INIT_EPEV*sizeof(struct epoll_event));
@@ -208,9 +214,6 @@ lt_base_init(void)
 //		fprintf(stderr, "malloc\n");
 //		return NULL;
 //	}
-
-    return base;
-}
     
 
 //push a io event to base_t

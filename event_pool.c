@@ -47,6 +47,7 @@ lt_alloc(lt_memory_pool_t *pool, lt_memory_pool_t *manager)
         pool->next = lt_new_memory_pool(pool->one_item_size, manager);
         pool = pool->next;//单向循环或者双向?TODO
 
+        pool->next = manager;
         alloc_rv = lt_alloc(pool, manager);
     }
 
@@ -103,12 +104,14 @@ lt_free(lt_memory_pool_t *pool, void *object_contents)
 }
 
 
-void lt_destroy_memory_pool(lt_memory_pool_t *pool)
+void lt_destroy_memory_pool(lt_memory_pool_t *pool, 
+        lt_memory_pool_t *manager)
 {
+    /*
     free(pool->all_item);
     free(pool->next);//TODO cirular list
     free(pool);
-
+    */
 };//TODO
 
 lt_memory_pool_t *lt_new_memory_pool_manager(void)
