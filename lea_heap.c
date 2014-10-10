@@ -120,7 +120,4 @@ int min_heap_erase_(min_heap_t *s, event_t *e)
     }
     e->min_heap_idx = -1;
     return 0;
-//   } else {
-//        return -1;
-//    }
 }

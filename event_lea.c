@@ -125,7 +125,7 @@ static event_t *
 lt_add_to_readylist(ready_evlist_t *readylist, //deleted_evlist_t* deletedlist,
   flag_t flag_set, int fd, func_t callback, void *arg)
 {
-    res_t res;
+//    res_t res;
 /* res = lt_eventarray_constructor_(readylist);
     if (res == -1)
         return NULL; */
@@ -338,7 +338,7 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 		lt_loop_init_actlist(base, epevents, ready);//should init ,but not only insert ready to action.
         //another option: 
 
-//        lt_ev_process_and_moveout(, after);
+        lt_ev_process_and_moveout(&base->activelist, after);
 
         if (ready == epevents_len)
             epevents_len *= 2;
