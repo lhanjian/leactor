@@ -35,7 +35,7 @@ lt_base_init_set(base_t *base)
 }
     */
 
-static res_t
+static inline res_t
 lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 {
     res_t res;
@@ -49,7 +49,6 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
         ev.events |= EPOLLOUT;
     if (flag & LV_CONN)  
         ev.events |= EPOLLET;
-    
     
     ev.data.ptr = event;
     
@@ -247,14 +246,14 @@ lt_io_add(base_t *base, int   fd, flag_t flag_set,
     return event;
 }
 
-res_t
+static inline res_t
 lt_mod_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag) 
 {
     res_t res;
 
     struct epoll_event ev;
 
-    ev.events = 
+    ev.events = 0;
     if (flag & LV_FDRD)
         ev.events |= EPOLLIN;
     if (flag & LV_FDWR)
@@ -273,7 +272,7 @@ lt_mod_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 }
 
 event_t *
-lt_io_mod(base_t *base, event_t *ev, flag_t new_flag_set,
+lt_io_mod(base_t *base, event_t *ev, flag_t new_flag_set,//自行获取原有的flag
         func_t callback, void *arg, to_t timeout)
 {
     if (ev) { 
