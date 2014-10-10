@@ -294,7 +294,7 @@ lt_ev_process_and_moveout(active_evlist_t *actlist, lt_time_t nowtime)
 //    int len = actlist->event_len;
     
     for (event_t *event = actlist->head; 
-            event == NULL; 
+            event != NULL; 
             event = event->next_active_ev) {//Why not use Tree?
  //       actlist->event_len--;//ev_persist  DONE/ev_oneshot  TODO
 		if (lt_ev_check_timeout(event, nowtime)) {
