@@ -115,7 +115,7 @@ int play_back(int test, void *arg)
         perror("readv->0");
         close(in_fd);
     } else if (rv != rcv_size) {
-        if (!read(in_fd, iov_buff[1], rcv_size)) {
+        if (read(in_fd, iov_buff[1], rcv_size) == -1) {
             perror("readddddddddddd\n");
         }
         printf("rcv_size:%d\n", rv);

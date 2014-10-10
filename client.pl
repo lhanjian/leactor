@@ -20,12 +20,12 @@ sub recvvv {
             threads->detach();
 
             while (1) {
-                print "recv S\n";
+#                print "recv S\n";
                 my $msg;
                 (defined $sock->recv($msg, 32)) or die "recvF:error<$!>\n";
-                print "recv O\n";
-                print ">".$msg."\0";
-                print "recv P\n"; 
+#                print "recv O\n";
+#                print ">".$msg."\0";
+#                print "recv P\n"; 
             }
         });
 }
@@ -35,11 +35,10 @@ sub senddd {
             threads->detach(); 
 
             while (1) {
-                print "send S\n";
+#                print "send S\n";
                 my $data = "send to SERVER:dATA";
                 $sock->send($data) or die "sendF: $!";
-                $sock->send($data) or die "sendF: $!";
-                print "send O\n";
+#                print "send O\n";
             }
 
         });
