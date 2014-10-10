@@ -47,9 +47,9 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
         ev.events |= EPOLLIN;
     if (flag & LV_FDWR)
         ev.events |= EPOLLOUT;
-    if (flag & LV_CONN) { 
+    if (flag & LV_CONN)  
         ev.events |= EPOLLET;
-    }
+    
     
     ev.data.ptr = event;
     
@@ -171,7 +171,7 @@ lt_base_init(void)
     base->epfd = epfd;
     base->readylist.event_pool_manager = lt_new_memory_pool_manager();
     base->readylist.event_pool = 
-        lt_new_memory_pool(sizeof(event_t), base->readylist.event_pool);
+        lt_new_memory_pool(sizeof(event_t), base->readylist.event_pool_manager);
 
     min_heap_constructor_(&base->timeheap);
 
@@ -222,7 +222,7 @@ lt_base_init(void)
 //if add the same fd?
 event_t *
 lt_io_add(base_t *base, int   fd, flag_t flag_set,
-       func_t callback, void *arg, to_t  timeout)
+       func_t callback, void *arg, to_t timeout)
 {
 //	event_t *event = base->readylist.eventarray[base->readylist.event_len];
     event_t *event = lt_add_to_readylist(&base->readylist, 
@@ -246,16 +246,47 @@ lt_io_add(base_t *base, int   fd, flag_t flag_set,
 
     return event;
 }
-/*
+
 res_t
-lt_io_mod(base_t *base, event_t *ev, flag_t flag_set,
+lt_mod_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag) 
+{
+    res_t res;
+
+    struct epoll_event ev;
+
+    ev.events = 
+    if (flag & LV_FDRD)
+        ev.events |= EPOLLIN;
+    if (flag & LV_FDWR)
+        ev.events |= EPOLLOUT;
+    if (flag & LV_CONN)
+        ev.events |= EPOLLET;
+
+    ev.data.ptr = event;
+    
+    res = epoll_ctl(epfd, EPOLL_CTL_MOD, mon_fd, &ev);
+    if (res) {
+        perror("epoll_ctl");
+    }
+
+    return res;
+}
+
+event_t *
+lt_io_mod(base_t *base, event_t *ev, flag_t new_flag_set,
         func_t callback, void *arg, to_t timeout)
 {
+    if (ev) { 
+        if (timeout >= 0) {
+            ev->endtime = lt_timeout_add(base, ev, timeout);
+        } else {
+            ev->min_heap_idx = -1;
+        }
 
-    return 
-
+        lt_mod_to_epfd(base->epfd, ev, ev->fd, new_flag_set);
+    }
+    return ev;
 }
-*/
 
 
 static void//res_t
@@ -283,19 +314,33 @@ lt_ev_process_and_moveout(active_evlist_t *actlist, lt_time_t nowtime)
 static inline void
 lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
 {
-	active_evlist_t *actlist = &base->activelist;
-//	evlist_t *readylist = &base->readylist;
-//TODO
-//memset
-/*
-    */
+    int i = 0;
+    active_evlist_t *actlist = &base->activelist;
 
-//    event_t **act_ev;
-	for (int i = 0; i < ready; i++) {
-        actlist->eventarray[i] = /*(event_t *)*/ev_array[i].data.ptr;
-//			readylist->eventarray[i];
-	}
-	actlist->event_len = ready;
+        for (; i < ready; i++) {
+            event_t *ev = (event_t *)ev_array[i].data.ptr;
+            if (ev->flag & LV_LAG && 
+                    ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
+                actlist->head = ev;
+                break;
+            } else {
+                ev->callback(ev->fd, ev->arg);
+            }
+        }
+        i++;
+        event_t *ev_prev = actlist->head;
+        for (; i < ready; i++) {
+            event_t *ev = (event_t *)ev_array[i].data.ptr;
+            if (ev->flag & LV_LAG &&
+                    ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
+                ev_prev->next_active_ev = ev;
+                ev_prev = ev;
+            } else {
+                ev->callback(ev->fd, ev->arg); }
+        }
+//    } 
+
+    return ;
 }
 //core dispatch
 res_t 
@@ -335,8 +380,11 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
 			fprintf(stderr, "loop expired\n");
 			break;
 		}
-		lt_loop_init_actlist(base, epevents, ready);//should init ,but not only insert ready to action.
+
+		lt_loop_init_actlist(base, epevents, ready);
+        //should init ,but not only insert ready to action.
         //another option: 
+    
 
         lt_ev_process_and_moveout(&base->activelist, after);
 
