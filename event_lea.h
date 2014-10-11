@@ -21,13 +21,13 @@
 #define LV_CONN (0x0000004)
 #define LV_FDRD (0x0000001)
 #define LV_FDWR (0x0000002)
+#define LV_ONESHOT (0x0000010)
 #define INF (LONG_MAX)
 #define NO_TIMEOUT (-1L)
 #define NULL_ARG (NULL)
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
 #define UNDELETED (0)
 
-#define EV_ONESHOT (1)
 //#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;

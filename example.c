@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <netdb.h>
+#include <errno.h>
 #include <fcntl.h>
 
 static inline int ex_nonblocking(int fd)
@@ -86,7 +87,8 @@ int incoming(int test, void *arg)
     }
 
     ex_nonblocking(*new_in_fd);
-    eventarray[*new_in_fd] = lt_io_add(base, *new_in_fd, LV_LAG|LV_FDRD|LV_CONN, play_back, new_in_fd, NO_TIMEOUT);
+    eventarray[*new_in_fd] = 
+        lt_io_add(base, *new_in_fd, LV_LAG|LV_FDRD|LV_CONN, play_back, new_in_fd, NO_TIMEOUT);
     n++;
 
     return 0;
@@ -99,36 +101,26 @@ int play_back(int test, void *arg)
     int in_fd = *(int *)arg;
     int rcv_size = 32;
     int rv;
-    struct iovec vector_buf[2];
 
     char iov_buff[2][rcv_size];
-    vector_buf[0].iov_base = iov_buff[0];
-    vector_buf[0].iov_len  = rcv_size;
-    vector_buf[1].iov_base = iov_buff[1];
-    vector_buf[1].iov_len  = rcv_size;
     
-re_read:
-   rv = readv(in_fd, vector_buf, 1);
+reread:
+    rv = read(in_fd, iov_buff[0], rcv_size);
     if (rv < 0) {
-        perror("readv->break");
+        perror("readv->break");//EAGAIN彻底读完
     } else if (!rv) {
-//        lt_io_remove(base, eventarray[in_fd]);
         perror("readv->0");
         close(in_fd);
-    } else if (rv != rcv_size) {
-        if (read(in_fd, iov_buff[1], rcv_size) == -1) {
-            perror("readddddddddddd\n");
-        }
+    } else if (rv < rcv_size) {
         printf("complete:%d\n", rv);
         printf("rcv_size:%d\n", rv);
         printf("ZERO:%s\nEND01\n", iov_buff[0]);
-        printf("ZERO:%s\nEND02\n", iov_buff[1]);
-
-        return 0;
+//rv = read(in_fd, iov_buff[0], rcv_size);
+    
     } else if (rv == rcv_size) {
         printf("rcv_size:%d\n", rv);
         printf("ZERO:%s\nEND01\n", iov_buff[0]);
-        printf("ZERO:%s\nEND02\n", iov_buff[1]);
+        goto reread;  //扔进池子继续读
     }
 
     char testf[] = "eafdsfavEND\n";
@@ -137,7 +129,6 @@ re_read:
         fprintf(stderr, "send rv:%d\n", rv);
         return -1;
     }
-    goto re_read;
-//    printf("%s\n", in_buff);
 
+    return 0;
 }

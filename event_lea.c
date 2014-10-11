@@ -304,7 +304,7 @@ lt_ev_process_and_moveout(active_evlist_t *actlist, lt_time_t nowtime)
             //TODO:clear it from memory?;
         } else {
             event->callback(event->fd, event->arg);
-            event->deleted = event->flag & EV_ONESHOT;//TODO
+            event->deleted = event->flag & LV_ONESHOT;//TODO
         }
     }
     return;
@@ -335,7 +335,8 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
                 ev_prev->next_active_ev = ev;
                 ev_prev = ev;
             } else {
-                ev->callback(ev->fd, ev->arg); }
+                ev->callback(ev->fd, ev->arg); 
+            }
         }
 //    } 
 

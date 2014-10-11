@@ -13,7 +13,7 @@ print "connected to the server\n";
 print "wait end\n";
 <>;
 use vars;
-my $number = -1;
+my $number = 0;
 open(my $file, '>', 'report.txt') or die;
 my $num = \$number;
 
@@ -35,10 +35,18 @@ my $recvvv = threads->create(
 threads->create(
     sub {
         threads->detach();
-        while (1) {
-            my $data = "send to SERVER:BBTB";
+        my $counter = 1;
+        while ($counter <= 5) {
+            my $data = "send CT:$counter to SERVER:BBTB";
+            $counter++;
             $sock->send($data) or die "sendF: $!";
         }
+
+        print "wait\n";
+        <>;
+        print "waitEND\n";
+        my $data = "sendSECOND CT:$counter to SERVER:BBTB";
+        $sock->send($data) or die "sendF: $!";
     }
 );
 $SIG{INT} = sub {
