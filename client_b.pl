@@ -12,22 +12,22 @@ print "connected to the server\n";
 <>;
 print "wait end\n";
 <>;
-my $number = 0;
+use vars;
+my $number = -1;
 open(my $file, '>', 'report.txt') or die;
+my $num = \$number;
 
-$SIG{INT} = sub {
-    die "Caught$\$number\n";
-};
-
-threads->create(
+my $recvvv = threads->create(
     sub {
-        threads->detach();
+        local $SIG{INT} = sub {
+            print $file "$$num\n";
+            return $$num;
+        };
         while (1) {
             my $msg;
-            (defined $sock->recv($msg, 32)) or die "recvF:error<$!>\n";
+            (defined $sock->recv($msg, 32)) or die "recvF:error<$!>\nnum:$$num\n";
             print ">".$msg."\0";
-            $number++;
-            print $number;
+            $$num++;
         } 
     }
 );
@@ -35,14 +35,15 @@ threads->create(
 threads->create(
     sub {
         threads->detach();
-
         while (1) {
             my $data = "send to SERVER:BBTB";
             $sock->send($data) or die "sendF: $!";
         }
     }
 );
-
+$SIG{INT} = sub {
+    $recvvv->kill('INT')->join();
+};
 sleep 15000;
 
 $sock->close();

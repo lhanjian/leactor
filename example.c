@@ -130,8 +130,8 @@ int play_back(int test, void *arg)
 
     char testf[] = "eafdsfavEND\n";
     if ((rv = send(in_fd, testf, sizeof (testf), 0)) < 0) {
-        fprintf(stderr, "send rv:%d\n", rv);
         perror("send");
+        fprintf(stderr, "send rv:%d\n", rv);
         return -1;
     }
 //    printf("%s\n", in_buff);
