@@ -7,7 +7,7 @@ my $sock = IO::Socket::INET->new(PeerAddr=>'localhost',
                               PeerPort=>'12344',
                               Proto   =>'tcp',) or die("Failed !");
 #$sock->write("test", 10, 0):
-#$sock->autoflush(1);
+$sock->autoflush(1);
 print "connected to the server\n";
 <>;
 print "wait end\n";
@@ -25,7 +25,7 @@ my $recvvv = threads->create(
         };
         while (1) {
             my $msg;
-            (defined $sock->recv($msg, 32)) or die "recvF:error<$!>\nnum:$$num\n";
+            (defined $sock->recv($msg, 32)) or die "\ndie:recvF:error<$!>\nnum:$$num\n";
             print ">".$msg."\0";
             $$num++;
         } 

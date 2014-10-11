@@ -107,6 +107,7 @@ int play_back(int test, void *arg)
     vector_buf[1].iov_base = iov_buff[1];
     vector_buf[1].iov_len  = rcv_size;
     
+re_read:
    rv = readv(in_fd, vector_buf, 1);
     if (rv < 0) {
         perror("readv->break");
@@ -115,14 +116,16 @@ int play_back(int test, void *arg)
         perror("readv->0");
         close(in_fd);
     } else if (rv != rcv_size) {
-        if (read(in_fd, iov_buff[1], rcv_size) == -1) {
+   /*     if (read(in_fd, iov_buff[1], rcv_size) == -1) {
             perror("readddddddddddd\n");
-        }
+        }*/
+        printf("complete:%d\n", rv);
         printf("rcv_size:%d\n", rv);
         printf("ZERO:%s\nEND01\n", iov_buff[0]);
         printf("ZERO:%s\nEND02\n", iov_buff[1]);
+
+        return 0;
     } else if (rv == rcv_size) {
-        printf("perfect:%d\n", rv);
         printf("rcv_size:%d\n", rv);
         printf("ZERO:%s\nEND01\n", iov_buff[0]);
         printf("ZERO:%s\nEND02\n", iov_buff[1]);
@@ -134,7 +137,7 @@ int play_back(int test, void *arg)
         fprintf(stderr, "send rv:%d\n", rv);
         return -1;
     }
+    goto re_read;
 //    printf("%s\n", in_buff);
 
-    return 0;
 }
