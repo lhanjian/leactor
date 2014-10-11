@@ -86,7 +86,7 @@ int incoming(int test, void *arg)
     }
 
     ex_nonblocking(*new_in_fd);
-    eventarray[*new_in_fd] = lt_io_add(base, *new_in_fd, LV_FDRD|LV_CONN, play_back, new_in_fd, NO_TIMEOUT);
+    eventarray[*new_in_fd] = lt_io_add(base, *new_in_fd, LV_LAG|LV_FDRD|LV_CONN, play_back, new_in_fd, NO_TIMEOUT);
     n++;
 
     return 0;
@@ -116,9 +116,9 @@ re_read:
         perror("readv->0");
         close(in_fd);
     } else if (rv != rcv_size) {
-   /*     if (read(in_fd, iov_buff[1], rcv_size) == -1) {
+        if (read(in_fd, iov_buff[1], rcv_size) == -1) {
             perror("readddddddddddd\n");
-        }*/
+        }
         printf("complete:%d\n", rv);
         printf("rcv_size:%d\n", rv);
         printf("ZERO:%s\nEND01\n", iov_buff[0]);
