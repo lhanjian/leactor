@@ -36,7 +36,7 @@ threads->create(
     sub {
         threads->detach();
         my $counter = 1;
-        while ($counter <= 5) {
+        while ($counter > 0) {
             my $data = "send CT:$counter to SERVER:BBTB";
             $counter++;
             $sock->send($data) or die "sendF: $!";
