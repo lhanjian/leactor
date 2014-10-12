@@ -41,14 +41,12 @@ int child(/*start restart ...  other conf*/)
        return EXIT_FAILURE;
    }
 
-   http_t *main = http_new(base);
+   conf_t *conf = NULL;
+   http_t *main = http_new(base, conf);
    if (!main) {
        fprintf(stderr, "main http_t fail to create\n");
        return EXIT_FAILURE;
    }
-
-
-
 
 
 

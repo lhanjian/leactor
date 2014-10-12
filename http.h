@@ -10,15 +10,46 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+typedef struct conf {
+} conf_t;
+typedef struct request {
+
+} request_t;
+
 typedef struct connection {
+    int fd;
+    char *peer_addr;
+    char *peer_port;
+
+    func_t callback;
+    void *conn_callback_arg;
+
     
+    struct lt_memory_pool request_pool;
+    struct request *request_list;
 } connection_t;
+
+typedef struct listening {
+    int fd;
+//    struct addrinfo local_addr;
+    char *bind_addr;
+    char *bind_port;
+    struct sockaddr saddr;
+
+    struct lt_memory_pool connection_pool;
+    struct connection listen_conn;
+    struct connection *client_list;
+    struct connection *downstream_list;;
+} listening_t;
+
 typedef struct http {
     struct base *base;
     struct connection *connection_list;
-    struct addrinfo local_addr;
+    struct listening listen;
 } http_t;
+
 void ignore_sigpipe(void);
+
 http_t *http_new(base_t *);
 
 
