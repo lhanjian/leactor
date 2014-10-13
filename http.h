@@ -50,6 +50,4 @@ typedef struct http {
 
 void ignore_sigpipe(void);
 
-http_t *http_new(base_t *);
-
-
+http_t *http_new(base_t *, conf_t *);

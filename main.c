@@ -48,8 +48,6 @@ int child(/*start restart ...  other conf*/)
        return EXIT_FAILURE;
    }
 
-
-
     return 0;
 }
 

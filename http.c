@@ -1,4 +1,6 @@
 #include "http.h"
+static int get_addrinfo_with_bind(http_t *http);
+
 void 
 ignore_sigpipe(void)
 {
@@ -13,7 +15,7 @@ ignore_sigpipe(void)
 
 http_t *http_new(base_t *base, conf_t *conf)
 {
-    http_t *http = calloc(1, sizeof http_t);
+    http_t *http = calloc(1, sizeof(http_t));
     if (!http) {
         perror("malloc http");
         return NULL;
@@ -38,10 +40,12 @@ int get_addrinfo_with_bind(http_t *http)
         return -1;
     }
 
-    for (struct addrinfo *p = res; p != NULL; p->next) {
-        int listen_sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+    struct addrinfo *p;
+    for (p = res; p != NULL; p = p->ai_next) {
+        int listen_sock = socket(p->ai_family, p->ai_socktype, 
+                p->ai_protocol);
         if (listen_sock == -1) {
-            perror("listen_sock_fd_get");
+
             continue;
         }
 
@@ -53,12 +57,12 @@ int get_addrinfo_with_bind(http_t *http)
         }
 
         if (bind(listen_sock, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
+            close(listen_sock);
             perror("bind error");
             continue;
         }
-        http->listen.fd = listen_sock;
-        http->listen.saddr = p->ai_addr;
+        http->listen.saddr = *p->ai_addr;
+        ignore_sigpipe();
         break;
     }
 
@@ -71,16 +75,15 @@ int get_addrinfo_with_bind(http_t *http)
     return 0;
 }
 
-int http_add_listen(http)
+int http_add_listen(http_t *http)
 {
-    int rv;
-    rv = get_addrinfo_with_bind(http);
+    int rv = get_addrinfo_with_bind(http);
     if (rv) {
         fprintf(stderr, "get_addrinfo_with_bind error");
-        return -1
+        return -1;
     }
 
-    rv = listen(http->fd, SOMAXCONN);
+    rv = listen(http->listen.fd, SOMAXCONN);
     if (rv) {
         fprintf(stderr, "listen error");
         return -1;
