@@ -1,7 +1,7 @@
 #include "http.h"
 static int get_addrinfo_with_bind(http_t *http);
-static int http_add_listen(http_t *http);
-static int http_bind_listen_with_handle(http_t *http, conf_t *conf);
+static int http_add_listen(http_t *http, conf_t *conf);
+static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
 
 void 
 ignore_sigpipe(void)
@@ -15,7 +15,7 @@ ignore_sigpipe(void)
     }
 }
 
-http_t *http_new(base_t *base, conf_t *conf)
+http_t *http_master_new(base_t *base, conf_t *conf)
 {
     http_t *http = calloc(1, sizeof(http_t));
     if (!http) {
@@ -27,28 +27,41 @@ http_t *http_new(base_t *base, conf_t *conf)
 //TODO:sustitute with JSON conf file
     http->listen.bind_port = "80";//same to UP
 
-    int rv = http_add_listen(http);
+    int rv = http_add_listen(http, conf);
     if (rv) {
         free(http);
         return NULL;
     }
 
-    http_bind_listen_with_handle(http, conf);
+    http_bind_listenfd_with_handle(http, conf);
     return http;
 }
-void send_to_child(int seq, listening_t *listen)
+int send_to_child(int seq, int fd)
 {
-    
+    uint64_t count = 1;
+    int rv = write(seq, &count, sizeof(count));
+    if (rv != sizeof(count)) {
+        perror("eventfd write failed");
+        return -1;
+    }
+    return rv;
 }
+
 int http_accept_distributor(int fd, http_t* http)
 {
-    static int seq_count = 0;
-    send_to_child(seq_count % http->core_amount, &http->listen);
+    static unsigned long seq_count = 0;
+    int rv = send_to_child(seq_count % http->core_amount, 
+            http->listen.fd);
+    if (rv == -1) {
+        fprintf(stderr, "eventfd send failed");
+    }
+
+    seq_count++;
 
     return 0;
 }
 
-int http_bind_listen_with_handle(http_t *http, conf_t *conf)
+int http_bind_listenfd_with_handle(http_t *http, conf_t *conf)
 {
     http->listen.ev = lt_io_add(http->base, http->listen.fd, 
             LV_LAG|LV_FDRD, (func_t)http_accept_distributor/*TODO http_cb*/, 
@@ -77,7 +90,7 @@ int get_addrinfo_with_bind(http_t *http)
         int listen_sock = socket(p->ai_family, p->ai_socktype, 
                 p->ai_protocol);
         if (listen_sock == -1) {
-
+            perror("listen socket");
             continue;
         }
 
@@ -107,7 +120,16 @@ int get_addrinfo_with_bind(http_t *http)
     return 0;
 }
 
-int http_add_listen(http_t *http)
+int send_listenfd_to_child(int pfd[2], int fd)
+{
+    close(pfd[0]);
+    write(pfd[1], &fd, sizeof(fd));
+    close(pfd[1]);
+
+    return 0;
+}
+
+int http_add_listen(http_t *http, conf_t *conf)
 {
     int rv = get_addrinfo_with_bind(http);
     if (rv) {
@@ -115,11 +137,54 @@ int http_add_listen(http_t *http)
         return -1;
     }
 
+    send_listenfd_to_child(conf->pfd, http->listen.fd);
+
     rv = listen(http->listen.fd, SOMAXCONN);
     if (rv) {
         fprintf(stderr, "listen error");
         return -1;
     }
 
+
     return 0;
+}
+
+void recv_listenfd_to_child(int pfd[2], int *fd)
+{
+    close(pfd[1]);
+    read(pfd[0], fd, sizeof(int));
+    close(pfd[0]);
+}
+
+int start_accept(int test, void *arg)
+{
+    http_t *http = (http_t *)arg;
+
+    for (;;) {
+        connection_t *conn = lt_alloc(&http->listen.connection_pool, 
+                &http->listen.connection_pool_manager);
+        int fd = accept4(http->listen.fd, conn->peer_addr, 
+                sizeof(conn->peer_addr), O_NONBLOCK);// maybe 512
+        if (fd == -1) {
+            perror("accept4 error");
+            return -1;
+        }
+
+        conn->fd = fd;
+
+        lt_io_add(http->base, fd, LV_FDRD|LV_CONN, http_conn, http, INF);
+
+    }
+    return 0;
+}
+
+http_t *http_worker_new(base_t *base, conf_t *conf)
+{
+    http_t *http = malloc(sizeof(http_t));
+
+    recv_listenfd_to_child(conf->pfd, &http->listen.fd);
+
+    lt_io_add(base, conf->efd_distributor, LV_FDRD, (func_t)start_accept, http, NO_TIMEOUT);
+
+    return http;
 }

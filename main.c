@@ -1,6 +1,5 @@
 #include "event_lea.h"
 #include "http.h"
-#include <sys/eventfd.h>
 /*
 #include <unistd.h>
 #include <sys/socket.h>
@@ -13,48 +12,60 @@
 #include <fcntl.h>
 #include <signal.h>
 */
-int child();
-int father();
-
+int child(conf_t *conf);
+int father(conf_t *conf);
 int main()
 {
-    int fd = eventfd(0, EFD_NONBLOCK);
-    int rv = fork();
-    switch (rv) {
+    int efd = eventfd(0, EFD_NONBLOCK);
+    conf_t *conf = malloc(sizeof(conf_t));
+    conf->efd_distributor = efd;
+
+    if (pipe(conf->pfd)) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    switch (fork()) {
         case -1:
             perror("fork");
             exit(EXIT_FAILURE);
             break;
         case 0:
-            child();
+            child(conf);
+            exit(EXIT_SUCCESS);
         default:
-            father();
+            father(conf);
             break;
     }
     return 0;
 }
 
-int father(/*start restart ...  other conf*/)
+int father(conf_t *conf/*start restart ...  other conf*/)
 {
    base_t *base = lt_base_init();
    if (!base) {
        fprintf(stderr, "Create base failed\n");
-       return EXIT_FAILURE;
+       exit(EXIT_FAILURE);
    }
 
-   conf_t *conf = NULL;
-   http_t *main = http_new(base, conf);
+   http_t *main = http_master_new(base, conf);
    if (!main) {
        fprintf(stderr, "main http_t fail to create\n");
-       return EXIT_FAILURE;
+       exit(EXIT_FAILURE);
    }
    
    lt_base_loop(base, NO_TIMEOUT);
-   
     return 0;
 }
 
-int child()
+int child(conf_t *conf)
 {
+    base_t *base = lt_base_init();
+    if (base == NULL) {
+        fprintf(stderr, "child base_init error");
+        exit(EXIT_FAILURE);
+    }
 
+    lt_base_loop(base, NO_TIMEOUT);
+    return 0;
 }

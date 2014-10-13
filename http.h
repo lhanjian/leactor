@@ -10,7 +10,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <sys/eventfd.h>
 typedef struct conf {
+    int efd_distributor;
+    int pfd[2];
 } conf_t;
 typedef struct request {
 
@@ -37,6 +41,7 @@ typedef struct listening {
     struct sockaddr saddr;
 
     struct lt_memory_pool connection_pool;
+    struct lt_memory_pool connection_pool_manager;
     struct connection listen_conn;
     struct connection *client_list;
     struct connection *downstream_list;;
@@ -53,4 +58,4 @@ typedef struct http {
 
 void ignore_sigpipe(void);
 
-http_t *http_new(base_t *, conf_t *);
+http_t *http_master_new(base_t *, conf_t *);
