@@ -36,14 +36,27 @@ http_t *http_new(base_t *base, conf_t *conf)
     http_bind_listen_with_handle(http, conf);
     return http;
 }
-
-int http_bind_listen_with_handle(http_t *http, conf_t *conf)
+void send_to_child(int seq, listening_t *listen)
 {
-    lt_io_add(http->base, http->listen.fd, LV_LAG|LV_FDRD, 
-            (func_t)NULL/*TODO*/, (void *)NULL/*TODO*/, INF);
+    
+}
+int http_accept_distributor(int fd, http_t* http)
+{
+    static int seq_count = 0;
+    send_to_child(seq_count % http->core_amount, &http->listen);
 
     return 0;
 }
+
+int http_bind_listen_with_handle(http_t *http, conf_t *conf)
+{
+    http->listen.ev = lt_io_add(http->base, http->listen.fd, 
+            LV_LAG|LV_FDRD, (func_t)http_accept_distributor/*TODO http_cb*/, 
+            (void *)http/*TODO http_cb_args*/, INF);
+
+    return 0;
+}
+
 int get_addrinfo_with_bind(http_t *http)
 {
     struct addrinfo hints, *res;

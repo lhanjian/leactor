@@ -40,13 +40,15 @@ typedef struct listening {
     struct connection listen_conn;
     struct connection *client_list;
     struct connection *downstream_list;;
-    struct event ev;
+    struct event *ev;
+
 } listening_t;
 
 typedef struct http {
     struct base *base;
     struct connection *connection_list;
     struct listening listen;
+    int core_amount;
 } http_t;
 
 void ignore_sigpipe(void);

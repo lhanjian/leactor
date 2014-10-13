@@ -1,5 +1,6 @@
 #include "event_lea.h"
 #include "http.h"
+#include <sys/eventfd.h>
 /*
 #include <unistd.h>
 #include <sys/socket.h>
@@ -17,6 +18,7 @@ int father();
 
 int main()
 {
+    int fd = eventfd(0, EFD_NONBLOCK);
     int rv = fork();
     switch (rv) {
         case -1:
@@ -32,9 +34,8 @@ int main()
     return 0;
 }
 
-int child(/*start restart ...  other conf*/)
+int father(/*start restart ...  other conf*/)
 {
-
    base_t *base = lt_base_init();
    if (!base) {
        fprintf(stderr, "Create base failed\n");
@@ -48,7 +49,12 @@ int child(/*start restart ...  other conf*/)
        return EXIT_FAILURE;
    }
    
-
+   lt_base_loop(base, NO_TIMEOUT);
+   
     return 0;
 }
 
+int child()
+{
+
+}
