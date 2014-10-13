@@ -1,5 +1,7 @@
 #include "http.h"
 static int get_addrinfo_with_bind(http_t *http);
+static int http_add_listen(http_t *http);
+static int http_bind_listen_with_handle(http_t *http, conf_t *conf);
 
 void 
 ignore_sigpipe(void)
@@ -21,9 +23,26 @@ http_t *http_new(base_t *base, conf_t *conf)
         return NULL;
     }
 
-    http->listen.bind_addr = NULL;//ALL available localaddr TODO:sustitute with JSON(conf file)???
+    http->listen.bind_addr = NULL;//ALL available localaddr 
+//TODO:sustitute with JSON conf file
     http->listen.bind_port = "80";//same to UP
+
+    int rv = http_add_listen(http);
+    if (rv) {
+        free(http);
+        return NULL;
+    }
+
+    http_bind_listen_with_handle(http, conf);
     return http;
+}
+
+int http_bind_listen_with_handle(http_t *http, conf_t *conf)
+{
+    lt_io_add(http->base, http->listen.fd, LV_LAG|LV_FDRD, 
+            (func_t)NULL/*TODO*/, (void *)NULL/*TODO*/, INF);
+
+    return 0;
 }
 int get_addrinfo_with_bind(http_t *http)
 {

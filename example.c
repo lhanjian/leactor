@@ -43,7 +43,8 @@ int main(void)
         }
 
         int yes = 1;
-        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
+        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, 
+                    &yes, sizeof(yes)) == -1) {
             perror("sso");
             exit(1);
         }

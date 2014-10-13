@@ -40,6 +40,7 @@ typedef struct listening {
     struct connection listen_conn;
     struct connection *client_list;
     struct connection *downstream_list;;
+    struct event ev;
 } listening_t;
 
 typedef struct http {
