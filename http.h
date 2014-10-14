@@ -1,5 +1,6 @@
 #include "event_lea.h"
-
+#include <features.h>
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -40,8 +41,8 @@ typedef struct listening {
     char *bind_port;
     struct sockaddr saddr;
 
-    struct lt_memory_pool connection_pool;
-    struct lt_memory_pool connection_pool_manager;
+    struct lt_memory_pool *connection_pool;
+    struct lt_memory_pool *connection_pool_manager;
     struct connection listen_conn;
     struct connection *client_list;
     struct connection *downstream_list;;

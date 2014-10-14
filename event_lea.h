@@ -9,7 +9,6 @@
 #include <limits.h>
 #include <time.h>
 
-#include <features.h>
 //system independence
 #include <sys/epoll.h>
 #define MAX_ACTIVE
@@ -29,7 +28,6 @@
 #define NULL_ARG (NULL)
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
 #define UNDELETED (0)
-#define _GNU_SOURCE
 
 //#define 
 //static funtion didn't dispatch return value;

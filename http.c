@@ -165,19 +165,20 @@ int start_accept(int test, void *arg)
 {
     http_t *http = (http_t *)arg;
 
-    for (;;) {
-        connection_t *conn = lt_alloc(&http->listen.connection_pool, 
-                &http->listen.connection_pool_manager);
+    for (int i = 0; i < SOMAXCONN; i++) {//TODO
+        connection_t *conn = lt_alloc(http->listen.connection_pool, 
+                http->listen.connection_pool_manager);
 
         int fd = accept4(http->listen.fd, conn->peer_addr, 
-                sizeof(conn->peer_addr), O_NONBLOCK);// maybe 512
+                sizeof(struct sockaddr), O_NONBLOCK);// maybe 512
         if (fd == -1 && errno == EAGAIN) {
             break;
         } 
 
         conn->fd = fd;
 
-        lt_io_add(http->base, fd, LV_FDRD|LV_CONN, http_conn_openning, http, INF);
+        lt_io_add(http->base, fd, LV_FDRD|LV_CONN, 
+                http_conn_openning, http, INF);
 
         continue;
     }
@@ -187,6 +188,15 @@ int start_accept(int test, void *arg)
 http_t *http_worker_new(base_t *base, conf_t *conf)
 {
     http_t *http = malloc(sizeof(http_t));
+    if (http == NULL) {
+        perror("malloc http");
+        return NULL;
+    }
+
+    http->listen.connection_pool_manager = lt_new_memory_pool_manager();
+
+    http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
+            http->listen.connection_pool_manager);
 
     recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
