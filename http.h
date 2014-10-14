@@ -30,9 +30,12 @@ typedef struct connection {
     void *conn_callback_arg;
 
     
+    struct event *ev;
     struct lt_memory_pool *request_pool;
     struct lt_memory_pool *request_pool_manager;
     struct request *request_list;
+
+    func_t conn_handler;
 } connection_t;
 
 typedef struct listening {

@@ -34,9 +34,12 @@ http_t *http_master_new(base_t *base, conf_t *conf)
         return NULL;
     }
 
-    http_bind_listenfd_with_handle(http, conf);
+    http->listen.ev = lt_io_add(http->base, http->listen.fd, 
+            LV_LAG|LV_FDRD, (func_t)http_accept_distributor/*TODO http_cb*/, 
+            (void *)http/*TODO http_cb_args*/, INF);
     return http;
 }
+
 int send_to_child(int seq, int fd)
 {
     uint64_t count = 1;
@@ -58,15 +61,6 @@ int http_accept_distributor(int fd, http_t* http)
     }
 
     seq_count++;
-
-    return 0;
-}
-
-int http_bind_listenfd_with_handle(http_t *http, conf_t *conf)
-{
-    http->listen.ev = lt_io_add(http->base, http->listen.fd, 
-            LV_LAG|LV_FDRD, (func_t)http_accept_distributor/*TODO http_cb*/, 
-            (void *)http/*TODO http_cb_args*/, INF);
 
     return 0;
 }
@@ -194,7 +188,7 @@ int start_accept(int test, void *arg)
         conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
                 conn->request_pool_manager);
 
-        lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
+        conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
                 http_conn_openning, http, INF);
 
         continue;
@@ -213,11 +207,12 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
     http->listen.connection_pool_manager = lt_new_memory_pool_manager();
 
     http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
-            http->listen.connection_pool_manager);
+                                    http->listen.connection_pool_manager);
 
     recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
-    lt_io_add(base, conf->efd_distributor, LV_FDRD, start_accept, http, NO_TIMEOUT);
+    http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD, 
+            start_accept, http, NO_TIMEOUT);
 
     return http;
 }
