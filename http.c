@@ -87,7 +87,7 @@ int get_addrinfo_with_bind(http_t *http)
 
     struct addrinfo *p;
     for (p = res; p != NULL; p = p->ai_next) {
-        int listen_sock = socket(p->ai_family, p->ai_socktype, 
+        int listen_sock = socket(p->ai_family, p->ai_socktype|SOCK_NONBLOCK, 
                 p->ai_protocol);
         if (listen_sock == -1) {
             perror("listen socket");
@@ -156,6 +156,11 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
     close(pfd[0]);
 }
 
+int http_conn_openning(int fd, void *arg)
+{
+    return 0;
+}
+
 int start_accept(int test, void *arg)
 {
     http_t *http = (http_t *)arg;
@@ -163,17 +168,18 @@ int start_accept(int test, void *arg)
     for (;;) {
         connection_t *conn = lt_alloc(&http->listen.connection_pool, 
                 &http->listen.connection_pool_manager);
+
         int fd = accept4(http->listen.fd, conn->peer_addr, 
                 sizeof(conn->peer_addr), O_NONBLOCK);// maybe 512
-        if (fd == -1) {
-            perror("accept4 error");
-            return -1;
-        }
+        if (fd == -1 && errno == EAGAIN) {
+            break;
+        } 
 
         conn->fd = fd;
 
-        lt_io_add(http->base, fd, LV_FDRD|LV_CONN, http_conn, http, INF);
+        lt_io_add(http->base, fd, LV_FDRD|LV_CONN, http_conn_openning, http, INF);
 
+        continue;
     }
     return 0;
 }
@@ -184,7 +190,7 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 
     recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
-    lt_io_add(base, conf->efd_distributor, LV_FDRD, (func_t)start_accept, http, NO_TIMEOUT);
+    lt_io_add(base, conf->efd_distributor, LV_FDRD, start_accept, http, NO_TIMEOUT);
 
     return http;
 }

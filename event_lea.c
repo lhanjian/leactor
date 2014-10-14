@@ -180,10 +180,10 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
             event_t *ev = (event_t *)ev_array[i].data.ptr;
             if (ev->flag & LV_LAG && 
                     ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
-                actlist->head = ev;
+                actlist->head = ev;//lag
                 break;
             } else {
-                ev->callback(ev->fd, ev->arg);
+                ev->callback(ev->fd, ev->arg);//directly
             }
         }
         i++;
