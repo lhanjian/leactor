@@ -23,14 +23,15 @@ typedef struct request {
 
 typedef struct connection {
     int fd;
-    char *peer_addr;
+    struct sockaddr peer_addr;
     char *peer_port;
 
     func_t callback;
     void *conn_callback_arg;
 
     
-    struct lt_memory_pool request_pool;
+    struct lt_memory_pool *request_pool;
+    struct lt_memory_pool *request_pool_manager;
     struct request *request_list;
 } connection_t;
 

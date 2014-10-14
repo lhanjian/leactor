@@ -176,23 +176,23 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
     int i = 0;
     active_evlist_t *actlist = &base->activelist;
 
-        for (; i < ready; i++) {
-            event_t *ev = (event_t *)ev_array[i].data.ptr;
-            if (ev->flag & LV_LAG && 
-                    ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
-                actlist->head = ev;//lag
-                break;
-            } else {
-                ev->callback(ev->fd, ev->arg);//directly
-            }
+    for (; i < ready; i++) {
+        event_t *ev = (event_t *)ev_array[i].data.ptr;
+        if (ev->flag & LV_LAG && 
+                ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
+            actlist->head = ev;//lag
+            break;
+        } else {
+            ev->callback(ev->fd, ev->arg);//directl
         }
-        i++;
-        event_t *ev_prev = actlist->head;
-        for (; i < ready; i++) {
-            event_t *ev = (event_t *)ev_array[i].data.ptr;
-            if (ev->flag & LV_LAG &&
-                    ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
-                ev_prev->next_active_ev = ev;
+    
+    }
+    i++;
+    event_t *ev_prev = actlist->head;
+    for (; i < ready; i++) {
+        event_t *ev = (event_t *)ev_array[i].data.ptr;
+        if (ev->flag & LV_LAG && ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
+            ev_prev->next_active_ev = ev;
                 ev_prev = ev;
             } else {
                 ev->callback(ev->fd, ev->arg); 

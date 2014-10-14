@@ -2,7 +2,7 @@
 static int get_addrinfo_with_bind(http_t *http);
 static int http_add_listen(http_t *http, conf_t *conf);
 static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
-
+/*
 void 
 ignore_sigpipe(void)
 {
@@ -14,6 +14,7 @@ ignore_sigpipe(void)
         perror("sigaction");
     }
 }
+*/
 
 http_t *http_master_new(base_t *base, conf_t *conf)
 {
@@ -166,18 +167,34 @@ int start_accept(int test, void *arg)
     http_t *http = (http_t *)arg;
 
     for (int i = 0; i < SOMAXCONN; i++) {//TODO
+        struct sockaddr peer_addr;
+        int fd = accept4(http->listen.fd, &peer_addr, 
+                sizeof(struct sockaddr), O_NONBLOCK);// maybe 512
+        if (fd == -1) {
+            int err = errno;
+            perror("accept4");
+
+            switch(err) {
+                case EAGAIN:return -1;
+                case ECONNABORTED:
+                            continue;
+                case EMFILE:return -1;
+                case ENFILE:return -1;
+                default:fprintf(stderr, "unknown accept4 error\n");
+                        return -1;
+            }
+        } 
+
         connection_t *conn = lt_alloc(http->listen.connection_pool, 
                 http->listen.connection_pool_manager);
 
-        int fd = accept4(http->listen.fd, conn->peer_addr, 
-                sizeof(struct sockaddr), O_NONBLOCK);// maybe 512
-        if (fd == -1 && errno == EAGAIN) {
-            break;
-        } 
-
         conn->fd = fd;
+        memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
+        conn->request_pool_manager = lt_new_memory_pool_manager();
+        conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
+                conn->request_pool_manager);
 
-        lt_io_add(http->base, fd, LV_FDRD|LV_CONN, 
+        lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
                 http_conn_openning, http, INF);
 
         continue;
