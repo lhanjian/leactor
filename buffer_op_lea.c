@@ -1,4 +1,4 @@
-#include "event_lea.h"
+#include "http.h"
 
 lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool, 
         lt_memory_pool_t *manager);
@@ -27,6 +27,7 @@ lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
         new_buf->next = old_buf;
     }
 
+
     
     return buf;
 }
@@ -44,18 +45,53 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     buf->end = buf->last + DEFAULT_BUF_SIZE;
     buf->next = buf;
 
+    buf->head = 0;
+    buf->written = 0;
+
+
     return buf;
 }
 
-int send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
+ssize_t send_buffer_chains_loop(connection_t *conn, lt_buffer_t *out_buf)
 {
     size_t length;
 
-    ssize_t rv = writev(fd, out_vector, vector_length);
+    int n = 1;
+    
+
+    for (lt_buffer_t *buf = out_buf; 
+            buf != buf->next && buf->next != out_buf; 
+            n++, buf = buf->next) { }
+
+    struct iovec out_vector[n];
+
+    for (int i = 0; i < n; i++) {
+        out_vector[i].iov_base = out_buf->pos;
+        out_vector[i].iov_len = out_buf->last - out_buf->pos;
+        length += out_vector[i].iov_len;
+    }
+
+    ssize_t rv = writev(conn->fd, out_vector, n);
     if (rv < length) {
-        send_buffer_chains_loop(fd, out_buf);
+        ssize_t written_count = rv / DEFAULT_BUF_SIZE;
+        ssize_t written_offset = rv % DEFAULT_BUF_SIZE;
+        ssize_t remain = length - rv;
+        int i;
+        for (i = 0; i < written_count; i++) {
+            ((lt_buffer_t *)out_vector[i].iov_base)->written = 1;
+        }
+        ((lt_buffer_t *)out_vector[i].iov_base)->pos += written_offset;
+        
+        
+        post_send_buffer_chains_loop(conn, out_buf);
+
+        return remain;
+        //Double Choice
+        //A, keep it loop in event_list to send
+        //B, Watch writable event and send
     } else if (rv == -1) {
         perror("writev");
+        return -1;
     }
 
 

@@ -29,11 +29,12 @@
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
 #define UNDELETED (0)
 typedef struct lt_buffer {
+    char *start;
     char *pos;
     char *last;
-    char *start;
     char *end;
     int head;
+    int written;
     char buf[DEFAULT_BUF_SIZE];
     struct lt_buffer *next;
 } lt_buffer_t;
