@@ -36,7 +36,7 @@ lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager)
 }
 
 void *
-lt_alloc(lt_memory_pool_t *pool)
+lt_alloc(lt_memory_pool_t *pool, lt_memory_pool_t *manager)
 {
     char *alloc_rv;
 
