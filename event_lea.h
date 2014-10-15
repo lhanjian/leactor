@@ -11,13 +11,13 @@
 
 //system independence
 #include <sys/epoll.h>
+#include <sys/uio.h>
 #define MAX_ACTIVE
 #define MAX_READY
-
+#define DEFAULT_BUF_SIZE (16384)
 #define INIT_EPEV (512)
 #define EVLIST_LEN (DEFAULT_MMAP_THRESHOLD_MAX)
 #define EPEV_MAX EVLIST_LEN
-
 #define LV_LAG (0x0000008)
 #define LV_CONN (0x0000004)
 #define LV_FDRD (0x0000001)
@@ -28,7 +28,15 @@
 #define NULL_ARG (NULL)
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
 #define UNDELETED (0)
-
+typedef struct lt_buffer {
+    char *pos;
+    char *last;
+    char *start;
+    char *end;
+    int head;
+    char buf[DEFAULT_BUF_SIZE];
+    struct lt_buffer *next;
+} lt_buffer_t;
 //#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
@@ -60,6 +68,7 @@ typedef struct lt_memory_pool {
     void *all_item;
 
     struct lt_memory_pool  *next;
+    struct lt_memory_pool  *manager;
 } lt_memory_pool_t, lt_memory_manager_t;
 
 lt_memory_manager_t *

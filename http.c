@@ -2,6 +2,7 @@
 static int get_addrinfo_with_bind(http_t *http);
 static int http_add_listen(http_t *http, conf_t *conf);
 static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
+static int http_accept_distributor(int fd, http_t* http);
 /*
 void 
 ignore_sigpipe(void)
@@ -102,7 +103,7 @@ int get_addrinfo_with_bind(http_t *http)
             continue;
         }
         http->listen.saddr = *p->ai_addr;
-        ignore_sigpipe();
+//        ignore_sigpipe();
         break;
     }
 
@@ -186,7 +187,7 @@ int start_accept(int test, void *arg)
         memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
         conn->request_pool_manager = lt_new_memory_pool_manager();
         conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
-                conn->request_pool_manager);
+                                                conn->request_pool_manager);
 
         conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
                 http_conn_openning, http, INF);
@@ -216,3 +217,5 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 
     return http;
 }
+
+//TODO:key-value pair

@@ -1,6 +1,5 @@
 #include "event_lea.h"
 #include <features.h>
-#define _GNU_SOURCE
 #include <unistd.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -29,13 +28,25 @@ typedef struct connection {
     func_t callback;
     void *conn_callback_arg;
 
-    
+    func_t close_callback;
+    void *conn_callback_close_arg;
+
     struct event *ev;
-    struct lt_memory_pool *request_pool;
-    struct lt_memory_pool *request_pool_manager;
-    struct request *request_list;
+
+        struct lt_memory_pool *request_pool;
+        struct lt_memory_pool *request_pool_manager;
+        struct request *request_list;
+
+        struct lt_memory_pool *buf_pool;
+        struct lt_memory_pool *buf_pool_manager;
 
     func_t conn_handler;
+
+    struct connection *next;
+    //buffer
+    //header_size
+    //body_size
+    //state
 } connection_t;
 
 typedef struct listening {
