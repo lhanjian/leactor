@@ -3,6 +3,8 @@
 lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool, 
         lt_memory_pool_t *manager);
 
+ssize_t pospone_send_buffer_chains_loop(int fd, lt_buffer_t *out_buf);
+
 lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
         lt_memory_pool_t *manager, size_t size)
 {
@@ -52,7 +54,7 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     return buf;
 }
 
-ssize_t send_buffer_chains_loop(connection_t *conn, lt_buffer_t *out_buf)
+ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
 {
     size_t length;
 
@@ -71,7 +73,7 @@ ssize_t send_buffer_chains_loop(connection_t *conn, lt_buffer_t *out_buf)
         length += out_vector[i].iov_len;
     }
 
-    ssize_t rv = writev(conn->fd, out_vector, n);
+    ssize_t rv = writev(fd, out_vector, n);
     if (rv < length) {
         ssize_t written_count = rv / DEFAULT_BUF_SIZE;
         ssize_t written_offset = rv % DEFAULT_BUF_SIZE;
@@ -82,8 +84,7 @@ ssize_t send_buffer_chains_loop(connection_t *conn, lt_buffer_t *out_buf)
         }
         ((lt_buffer_t *)out_vector[i].iov_base)->pos += written_offset;
         
-        
-        post_send_buffer_chains_loop(conn, out_buf);
+        pospone_send_buffer_chains_loop(fd, out_buf);
 
         return remain;
         //Double Choice
