@@ -28,6 +28,10 @@
 #define NULL_ARG (NULL)
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
 #define UNDELETED (0)
+
+#define LEZERO  (-2)
+#define LEAGAIN (-3)
+#define LEINTR  (-4)
 typedef struct lt_buffer {
     char *start;
     char *pos;

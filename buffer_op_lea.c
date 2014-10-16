@@ -60,7 +60,6 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
 
     int n = 1;
     
-
     for (lt_buffer_t *buf = out_buf; 
             buf != buf->next && buf->next != out_buf; 
             n++, buf = buf->next) { }
@@ -74,7 +73,7 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
     }
 
     ssize_t rv = writev(fd, out_vector, n);
-    if (rv < length) {
+    if (0 < rv && rv < length) {
         ssize_t written_count = rv / DEFAULT_BUF_SIZE;
         ssize_t written_offset = rv % DEFAULT_BUF_SIZE;
         ssize_t remain = length - rv;
@@ -84,15 +83,23 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
         }
         ((lt_buffer_t *)out_vector[i].iov_base)->pos += written_offset;
         
-        pospone_send_buffer_chains_loop(fd, out_buf);
+//        pospone_send_buffer_chains_loop(fd, out_buf);
 
         return remain;
         //Double Choice
         //A, keep it loop in event_list to send
         //B, Watch writable event and send
     } else if (rv == -1) {
-        perror("writev");
-        return -1;
+        int errsv = errno;
+        switch (errsv) {
+            case EAGAIN: return LEAGAIN;
+            case EINTR: return LEINTR;;
+            defaut: return;
+        }
+
+    } else if (!rv) {
+        fprintf(stderr, "writev returned zero\n");
+        return LEZERO;
     }
 
 
