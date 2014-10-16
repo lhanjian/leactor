@@ -154,6 +154,8 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
 
 int http_conn_openning(int fd, void *arg)
 {
+    connection_t *conn = (connection_t *)arg;
+
     return 0;
 }
 
@@ -170,11 +172,11 @@ int start_accept(int test, void *arg)
             perror("accept4");
 
             switch(err) {
-                case EAGAIN:return -1;
+                case EAGAIN:return -1;//complete?
                 case ECONNABORTED:
-                            continue;
-                case EMFILE:return -1;
-                case ENFILE:return -1;
+                            continue;//skip
+                case EMFILE:return -1;//FILE D
+                case ENFILE:return -1;//FILE D
                 default:fprintf(stderr, "unknown accept4 error\n");
                         return -1;
             }
@@ -190,7 +192,7 @@ int start_accept(int test, void *arg)
                                                 conn->request_pool_manager);
 
         conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
-                http_conn_openning, http, INF);
+                http_conn_openning, conn, INF);
 
         continue;
     }
