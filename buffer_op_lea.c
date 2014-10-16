@@ -93,7 +93,7 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
         int errsv = errno;
         switch (errsv) {
             case EAGAIN: return LEAGAIN;
-            case EINTR: return LEINTR;;
+            case EINTR:  return LEINTR;;
             defaut: return;
         }
 
