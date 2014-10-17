@@ -1,7 +1,6 @@
 #include "http.h"
+#include "event_lea.h"
 
-lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool, 
-        lt_memory_pool_t *manager);
 
 ssize_t pospone_send_buffer_chains_loop(int fd, lt_buffer_t *out_buf);
 
@@ -93,8 +92,8 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
         int errsv = errno;
         switch (errsv) {
             case EAGAIN: return LEAGAIN;
-            case EINTR:  return LEINTR;;
-            defaut: return;
+            case EINTR:  return LEINTR;
+            defaut: break;//TODO
         }
 
     } else if (!rv) {

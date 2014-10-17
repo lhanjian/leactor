@@ -12,6 +12,8 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/eventfd.h>
+
+#define DEFAULT_HEADER_BUFFER_SIZE (1024)
 typedef struct conf {
     int efd_distributor;
     int pfd[2];
@@ -37,12 +39,11 @@ typedef struct connection {
         struct lt_memory_pool request_pool_manager;
         struct request *request_list;
 
-        struct lt_memory_pool *buf_pool;
-        struct lt_memory_pool buf_pool_manager;
-
     func_t conn_handler;
 
     struct connection *next;
+    int timeout;
+    int close;
     //buffer
     //header_size
     //body_size
@@ -63,6 +64,8 @@ typedef struct listening {
     struct connection *downstream_list;;
     struct event *ev;
 
+        struct lt_memory_pool *buf_pool;
+        struct lt_memory_pool buf_pool_manager;
 } listening_t;
 
 typedef struct http {

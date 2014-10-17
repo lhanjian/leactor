@@ -152,9 +152,13 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
     close(pfd[0]);
 }
 
-int http_conn_openning(int fd, void *arg)
+int http_data_coming(int fd, void *arg)
 {
     connection_t *conn = (connection_t *)arg;
+
+    if (conn->timeout && conn->close) {
+        //http_close_connecting
+    }
 
     return 0;
 }
@@ -168,8 +172,8 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
-
     
+    lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
     return conn;
 }
 
@@ -202,8 +206,7 @@ int start_accept(int test, void *arg)
                                                 &conn->request_pool_manager);
 
         conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
-                http_conn_openning, conn, INF);
-
+                http_data_coming, conn, INF);
 
         continue;
     }

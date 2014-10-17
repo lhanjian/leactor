@@ -83,6 +83,9 @@ void*             lt_alloc(lt_memory_pool_t *pool, lt_memory_manager_t *manager)
 void              lt_free(lt_memory_pool_t *pool, void *object_contents);
 void              lt_destroy_memory_pool(lt_memory_pool_t *pool, lt_memory_pool_t *manager);
 
+lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *, lt_memory_pool_t *, size_t);
+lt_buffer_t *lt_new_buffer(lt_memory_pool_t *, lt_memory_pool_t *);
+
 typedef int flag_t;
 typedef struct event {
     func_t        callback;
