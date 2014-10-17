@@ -159,6 +159,20 @@ int http_conn_openning(int fd, void *arg)
     return 0;
 }
 
+connection_t *
+http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
+{
+
+    connection_t *conn = lt_alloc(http->listen.connection_pool, 
+            http->listen.connection_pool_manager);
+
+    conn->fd = fd;
+    memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
+
+    
+    return conn;
+}
+
 int start_accept(int test, void *arg)
 {
     http_t *http = (http_t *)arg;
@@ -182,17 +196,14 @@ int start_accept(int test, void *arg)
             }
         } 
 
-        connection_t *conn = lt_alloc(http->listen.connection_pool, 
-                http->listen.connection_pool_manager);
-
-        conn->fd = fd;
-        memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
-        conn->request_pool_manager = lt_new_memory_pool_manager();
+        connection_t *conn = http_init_connection(http, fd, peer_addr);
+        lt_new_memory_pool_manager(&conn->request_pool_manager);
         conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
-                                                conn->request_pool_manager);
+                                                &conn->request_pool_manager);
 
         conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
                 http_conn_openning, conn, INF);
+
 
         continue;
     }
@@ -207,7 +218,7 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
         return NULL;
     }
 
-    http->listen.connection_pool_manager = lt_new_memory_pool_manager();
+    http->listen.connection_pool_manager = lt_new_memory_pool_manager(NULL);
 
     http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
                                     http->listen.connection_pool_manager);
