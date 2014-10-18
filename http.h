@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <sys/eventfd.h>
 
-#define DEFAULT_HEADER_BUFFER_SIZE (1024)
+#define DEFAULT_HEADER_BUFFER_SIZE (16384)
 typedef struct conf {
     int efd_distributor;
     int pfd[2];
@@ -38,6 +38,8 @@ typedef struct connection {
         struct lt_memory_pool *request_pool;
         struct lt_memory_pool request_pool_manager;
         struct request *request_list;
+
+    lt_buffer_t *buf;
 
     func_t conn_handler;
 
@@ -70,7 +72,7 @@ typedef struct listening {
 
 typedef struct http {
     struct base *base;
-    struct connection *connection_list;
+//    struct connection *connection_list;
     struct listening listen;
     int core_amount;
 } http_t;

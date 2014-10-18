@@ -176,5 +176,11 @@ res_t base_dispatch(base_t *base_dispatch
 /*
 res_t base_free(base_t *base_rlve);
 */
+#define LABORT (-6)
+#define LCLOSE (-5)
+#define LAPART (-4)
+#define LAGAIN (-3)
+#define LERROR (-2)
+ssize_t lt_recv(int, lt_buffer_t *, size_t);
 #endif
 

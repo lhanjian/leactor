@@ -1,6 +1,11 @@
 #include "http.h"
 #include "event_lea.h"
 
+#define LCLOSE (-5)
+#define LAPART (-4)
+#define LAGAIN (-3)
+#define LERROR (-2)
+
 
 ssize_t pospone_send_buffer_chains_loop(int fd, lt_buffer_t *out_buf);
 
@@ -28,8 +33,6 @@ lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
         new_buf->next = old_buf;
     }
 
-
-    
     return buf;
 }
 
@@ -101,5 +104,54 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
         return LEZERO;
     }
 
+    return n;
+}
 
+ssize_t
+lt_recv(int fd, lt_buffer_t *lt_buf, size_t size)
+{
+    ssize_t n = recv(fd, lt_buf->pos, lt_buf->end - lt_buf->pos, 0/*recv TWICE*/);
+
+    if (n == 0) {
+            return LCLOSE;
+    } else if (n > 0) {
+        lt_buf->pos += n;
+            return n;
+    } else if (n == -1) {
+        int errsv = errno;
+        if (errsv == EAGAIN) {
+            return LAGAIN;
+        } else {
+            return LERROR;
+        }
+    } else { }
+
+    return n;
+}
+
+int 
+lt_accept(int fd, struct sockaddr *peer, size_t size)
+{
+    int conn_fd = accept(fd, peer, sizeof(struct sockaddr));
+    if (conn_fd == -1) {
+        int err = errno;
+        perror("accept4");
+
+        switch(err) { 
+            case EAGAIN:
+                return LAGAIN;//complete?
+            case ECONNABORTED:
+                return LABORT;//continue
+            case EMFILE:
+            case ENFILE:
+                perror("file descriptor Crashed"); 
+                return LERROR;//FILE D
+            default:
+                fprintf(stderr, "unknown accept4 error\n"); 
+                return LERROR;
+            }
+        } 
+
+
+    return conn_fd;
 }

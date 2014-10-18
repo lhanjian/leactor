@@ -215,7 +215,9 @@ int timerfd_expiration(int fd, void *arg)
     ssize_t rv = read(fd, &value, sizeof(uint64_t));
     if (rv != sizeof(uint64_t)) {
         perror("timerfd read\n");
+    }
     
+    return 0;
 }
 
 void timerfd_epoll_init(struct timespec timeout, base_t *base)
@@ -228,7 +230,6 @@ void timerfd_epoll_init(struct timespec timeout, base_t *base)
             .tv_sec = 0,
             .tv_nsec = 0
         },
-
         .it_interval = {
             .tv_sec = timeout.tv_sec,
             .tv_nsec = timeout.tv_nsec
@@ -242,7 +243,7 @@ void timerfd_epoll_init(struct timespec timeout, base_t *base)
     timerfd_settime(tfd, 0, &new_value, &old_value);
     
     lt_io_add(base, tfd, LV_FDRD|LV_CONN, timerfd_expiration, NULL, NO_TIMEOUT);
-
+    return ;
 }
 
 res_t 
@@ -300,7 +301,7 @@ lt_gettime()
 	return time_now;
 }
 
-static res_t
+res_t
 lt_remove_from_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 {
     res_t res;
@@ -379,5 +380,5 @@ lt_time_addition(lt_time_t time, to_t to)
 
 long long
 lt_time_a_sub_b(lt_time_t a, lt_time_t b)
-{ return a.tv_sec*1000000000LL + a.tv_nsec - b.tv_sec * 1000000000LL - b.tv_nsec; }
+{ return (a.tv_sec*1000000000LL + a.tv_nsec - b.tv_sec * 1000000000LL - b.tv_nsec); }
 

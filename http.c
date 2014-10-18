@@ -152,12 +152,26 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
     close(pfd[0]);
 }
 
+int set_http_data_coming_timeout();
 int http_data_coming(int fd, void *arg)
 {
     connection_t *conn = (connection_t *)arg;
 
     if (conn->timeout && conn->close) {
         //http_close_connecting
+    }
+
+    lt_buffer_t *buf;
+    if (conn->buf) {
+        buf = conn->buf;
+    } else {
+    }
+
+    int rv = lt_recv(fd, buf, DEFAULT_HEADER_BUFFER_SIZE);
+    if (rv == LAGAIN) {
+        set_http_data_coming_timeout();
+
+        return 0;
     }
 
     return 0;
@@ -173,7 +187,9 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
     
-    lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
+    conn->buf = lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, 
+            DEFAULT_HEADER_BUFFER_SIZE);
+
     return conn;
 }
 
@@ -183,24 +199,11 @@ int start_accept(int test, void *arg)
 
     for (int i = 0; i < SOMAXCONN; i++) {//TODO
         struct sockaddr peer_addr;
-        int fd = accept4(http->listen.fd, &peer_addr, 
-                sizeof(struct sockaddr), O_NONBLOCK);// maybe 512
-        if (fd == -1) {
-            int err = errno;
-            perror("accept4");
-
-            switch(err) {
-                case EAGAIN:return -1;//complete?
-                case ECONNABORTED:
-                            continue;//skip
-                case EMFILE:return -1;//FILE D
-                case ENFILE:return -1;//FILE D
-                default:fprintf(stderr, "unknown accept4 error\n");
-                        return -1;
-            }
-        } 
+        int fd = lt_accept(http->listen.fd, &peer_addr, 
+                sizeof(struct sockaddr));// maybe 512
 
         connection_t *conn = http_init_connection(http, fd, peer_addr);
+
         lt_new_memory_pool_manager(&conn->request_pool_manager);
         conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
                                                 &conn->request_pool_manager);
