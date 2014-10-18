@@ -14,13 +14,55 @@
 #include <sys/eventfd.h>
 
 #define DEFAULT_HEADER_BUFFER_SIZE (16384)
+
 typedef struct conf {
     int efd_distributor;
     int pfd[2];
 } conf_t;
-typedef struct request {
 
+struct upstream {
+} upstream_t;
+typedef struct request {
+    lt_buffer_t *header_in;
+    int state;
+    char *request_start;
+    char *request_end;
+    char *uri_start;
+    char *host_start;
+    char *schema_start;
+    char *args_start;
+    char *schema_end;
+    char *uri_end;
+    char *uri_ext;
+    char *host_end;
+    char *port_end;
+    char *header_name_start;
+    char *header_name_end;
+    char *header_start;
+    char *header_end;
+
+    int header_hash;
+    int lowcase_index;
+    int invalid_header; 
+    int complex_uri;
+    int quoted_uri;
+    int plus_in_uri;
+    int space_in_uri;
+    int http_version;
+
+    int http_major;
+    int http_minor;
+    char *http_protocol;
+
+    char lowcase_header[32];
+
+
+    upstream_t *upstream;
+    int method;
+
+    char *method_end;
 } request_t;
+
 
 typedef struct connection {
     int fd;
@@ -35,13 +77,15 @@ typedef struct connection {
 
     struct event *ev;
 
-        struct lt_memory_pool *request_pool;
-        struct lt_memory_pool request_pool_manager;
-        struct request *request_list;
+    struct lt_memory_pool *request_pool;
+    struct lt_memory_pool request_pool_manager;
+    struct request *request_list;
 
     lt_buffer_t *buf;
 
     func_t conn_handler;
+
+    int status;
 
     struct connection *next;
     int timeout;

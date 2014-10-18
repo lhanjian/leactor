@@ -153,6 +153,43 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
 }
 
 int set_http_data_coming_timeout();
+int http_parse_request_line(request_t *req, lt_buffer_t *buf);
+
+void http_create_request(connection_t *conn)
+{
+    request_t *req = 
+        lt_alloc(conn->request_pool, &conn->request_pool_manager);
+
+    req->header_in = conn->buf;
+    req->state = 0;
+
+}
+/*
+int http_read_request_header(request_t *req)
+{
+    ssize_t n = req->header_in->last - req->header_in->pos;
+    if (n > 0) {
+        return n;
+    }
+
+}
+*/
+int 
+http_process_request_line(int fd, void *arg)
+{
+    request_t *req = (request_t *)arg;
+
+//    http_read_request_header(r);
+    int rv = ngx_http_parse_request_line(req, req->header_in);
+    if (rv == LOK) {
+        req->request
+
+    }
+
+    return 0;
+}
+
+
 int http_data_coming(int fd, void *arg)
 {
     connection_t *conn = (connection_t *)arg;
@@ -169,10 +206,17 @@ int http_data_coming(int fd, void *arg)
 
     int rv = lt_recv(fd, buf, DEFAULT_HEADER_BUFFER_SIZE);
     if (rv == LAGAIN) {
-        set_http_data_coming_timeout();
-
+//        set_http_data_coming_timer();
+//        conn->status = EFAULT;
+        //push back lt_buffer to pool
         return 0;
+    } if (rv == LCLOSE) {
+        //http_close_connecting
     }
+
+    http_create_request(conn);
+    conn->ev->callback = http_process_request_line;
+    http_process_request_line(conn->fd, conn);
 
     return 0;
 }
@@ -180,7 +224,6 @@ int http_data_coming(int fd, void *arg)
 connection_t *
 http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 {
-
     connection_t *conn = lt_alloc(http->listen.connection_pool, 
             http->listen.connection_pool_manager);
 
@@ -190,6 +233,16 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->buf = lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, 
             DEFAULT_HEADER_BUFFER_SIZE);
 
+    conn->status = DEFAULT;
+
+    lt_new_memory_pool_manager(&conn->request_pool_manager);
+
+    conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
+            &conn->request_pool_manager);
+
+    conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
+            http_data_coming, conn, INF);
+    //add_timer
     return conn;
 }
 
@@ -199,17 +252,17 @@ int start_accept(int test, void *arg)
 
     for (int i = 0; i < SOMAXCONN; i++) {//TODO
         struct sockaddr peer_addr;
-        int fd = lt_accept(http->listen.fd, &peer_addr, 
-                sizeof(struct sockaddr));// maybe 512
+        int fd = lt_accept(http->listen.fd, &peer_addr);// maybe 512
+        if (fd == LAGAIN) {
+            return -1;
+        } else if (fd == LABORT) {
+            continue;
+        } else if (fd == LERROR) {
+            exit(EXIT_FAILURE);
+        }
 
         connection_t *conn = http_init_connection(http, fd, peer_addr);
 
-        lt_new_memory_pool_manager(&conn->request_pool_manager);
-        conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
-                                                &conn->request_pool_manager);
-
-        conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
-                http_data_coming, conn, INF);
 
         continue;
     }

@@ -13,6 +13,8 @@
 #include <sys/epoll.h>
 #include <sys/uio.h>
 #include <sys/timerfd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 #define MAX_ACTIVE
 #define MAX_READY
@@ -181,6 +183,12 @@ res_t base_free(base_t *base_rlve);
 #define LAPART (-4)
 #define LAGAIN (-3)
 #define LERROR (-2)
+#define LOK    (0)
+#define L_INVALID_METHOD (-7)
+
+
 ssize_t lt_recv(int, lt_buffer_t *, size_t);
+int lt_accept(int, struct sockaddr *sockaddr);
+
 #endif
 

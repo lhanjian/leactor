@@ -122,6 +122,7 @@ lt_recv(int fd, lt_buffer_t *lt_buf, size_t size)
         if (errsv == EAGAIN) {
             return LAGAIN;
         } else {
+            perror("recv");
             return LERROR;
         }
     } else { }
@@ -130,9 +131,10 @@ lt_recv(int fd, lt_buffer_t *lt_buf, size_t size)
 }
 
 int 
-lt_accept(int fd, struct sockaddr *peer, size_t size)
+lt_accept(int fd, struct sockaddr *peer)
 {
-    int conn_fd = accept(fd, peer, sizeof(struct sockaddr));
+    socklen_t socklen = sizeof(struct sockaddr);
+    int conn_fd = accept(fd, peer, &socklen);
     if (conn_fd == -1) {
         int err = errno;
         perror("accept4");
@@ -149,9 +151,10 @@ lt_accept(int fd, struct sockaddr *peer, size_t size)
             default:
                 fprintf(stderr, "unknown accept4 error\n"); 
                 return LERROR;
-            }
-        } 
-
+        }
+    } 
 
     return conn_fd;
 }
+
+
