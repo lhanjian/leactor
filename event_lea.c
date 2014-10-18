@@ -23,7 +23,7 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
     ev.data.ptr = event;
     
     res = epoll_ctl(epfd, EPOLL_CTL_ADD, mon_fd, &ev);
-	if(res) {
+	if (res) {
 		perror("epoll_ctl");
 	}
 
@@ -35,7 +35,7 @@ lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//ev
         flag_t flag_set, int fd, //int epfd,
         func_t callback, void *arg, int deleted)
 {
-    event_t *event = lt_alloc(evlist->event_pool, evlist->event_pool_manager);
+    event_t *event = lt_alloc(evlist->event_pool, &evlist->event_pool_manager);
 
     event->callback = callback;
     event->arg = arg;
@@ -84,11 +84,18 @@ lt_base_init(void)
     }
 
     base->epfd = epfd;
-    base->readylist.event_pool_manager = lt_new_memory_pool_manager();
+    /*base->readylist.event_pool_manager = */
+    lt_new_memory_pool_manager(&base->readylist.event_pool_manager);
     base->readylist.event_pool = 
-        lt_new_memory_pool(sizeof(event_t), base->readylist.event_pool_manager);
+        lt_new_memory_pool(sizeof(event_t), &base->readylist.event_pool_manager);
 
     min_heap_constructor_(&base->timeheap);
+
+    int tfd = timerfd_create(CLOCK_MONOTONIC_RAW, TFD_NONBLOCK);
+    if (tfd < 0) {
+        perror("timerfd_create");
+    }
+    base->timerfd = tfd;
 
     return base;
 }
@@ -202,14 +209,52 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
     return ;
 }
 
+int timerfd_expiration(int fd, void *arg)
+{
+    uint64_t value;
+    ssize_t rv = read(fd, &value, sizeof(uint64_t));
+    if (rv != sizeof(uint64_t)) {
+        perror("timerfd read\n");
+    
+}
+
+void timerfd_epoll_init(struct timespec timeout, base_t *base)
+{
+    int tfd = base->timerfd;
+    struct itimerspec old_value = {
+    };
+    struct itimerspec new_value = {
+        .it_value = {
+            .tv_sec = 0,
+            .tv_nsec = 0
+        },
+
+        .it_interval = {
+            .tv_sec = timeout.tv_sec,
+            .tv_nsec = timeout.tv_nsec
+        }
+    };
+    struct epoll_event ev = {
+        .data = { .fd = tfd},
+        .events = EPOLLIN /*| EPOLLET*/
+    };
+
+    timerfd_settime(tfd, 0, &new_value, &old_value);
+    
+    lt_io_add(base, tfd, LV_FDRD|LV_CONN, timerfd_expiration, NULL, NO_TIMEOUT);
+
+}
+
 res_t 
-lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
+lt_base_loop(base_t *base, /*lt_time_t*/struct timespec timeout)
 {
 	lt_time_t start, /*now,*/ after;
 
     long long diff;
     int ready = 0;
+
     start = lt_gettime();
+    timerfd_epoll_init(timeout, base);
 
     int epevents_len = INIT_EPEV;
 
@@ -224,11 +269,11 @@ lt_base_loop(base_t *base, /*lt_time_t*/long timeout)
         
         after = lt_gettime();
 		diff = lt_time_a_sub_b(after, start);//SUB TODO
-		if (time_a_gt_b(diff,>,timeout)) {
+/*		if (time_a_gt_b(diff,>,timeout)) {
 			fprintf(stderr, "loop expired\n");
 			break;
 		}
-
+*/
 		lt_loop_init_actlist(base, epevents, ready);
 
         lt_ev_process_and_moveout(&base->activelist, after);

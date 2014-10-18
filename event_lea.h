@@ -12,6 +12,8 @@
 //system independence
 #include <sys/epoll.h>
 #include <sys/uio.h>
+#include <sys/timerfd.h>
+#include <unistd.h>
 #define MAX_ACTIVE
 #define MAX_READY
 #define DEFAULT_BUF_SIZE (16384)
@@ -109,7 +111,7 @@ typedef struct min_heap {
 typedef struct {
     int event_len;
     lt_memory_pool_t *event_pool;
-    lt_memory_pool_t *event_pool_manager;
+    lt_memory_pool_t event_pool_manager;
 //   int             hole_len;
 //    event_t      ***hole_list;//deleted position
 } ready_evlist_t;//, activelist_t, evlist_t;
@@ -138,6 +140,7 @@ typedef struct base {
     int                 eptimeout;
 	lt_time_t           now;
     min_heap_t          timeheap;
+    int                 timerfd;
 //    int                 readylist_pos;
 } base_t;
 
@@ -145,7 +148,7 @@ lt_time_t lt_gettime(void);
 base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 void      lt_io_remove(base_t *base, event_t *ev);
-res_t     lt_base_loop(base_t *base, long timeout);
+res_t     lt_base_loop(base_t *base, struct timespec timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 //void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
