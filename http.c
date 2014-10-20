@@ -229,11 +229,18 @@ int http_request_line_parsed(request_t *req, int rv)
     return 0;
 }
 
+static inline lowcase_key_copy_from_origin(struct string *low, struct string *origin)
+{
+    low->data = origin->data;
+    low->length = origin->length;
+    for (int i = 0; i < origin->length; i++) {
+        low->data[i] = tolower(origin->data[i]);
+    }
+}
 int http_process_request_headers(event_t *ev, void *arg)
 {
 //    if (timeout) TODO
     request_t *req = (request_t *)arg;
-
     int rc = LAGAIN;
     for (;;) {
         if (rc == LAGAIN) {
@@ -251,10 +258,15 @@ int http_process_request_headers(event_t *ev, void *arg)
             if (req->invalid_header) {
                 continue;
             }
+            struct http_header_element *header_element = lt_alloc(req->header_pool, &req->header_pool_manager);
 
-            lt_http_header_element_t *header_element = 
-                lt_alloc(req->header_pool, &req->header_pool_manager);
-
+            header_element->hash = req->header_hash;//inline can reduce code number
+            lt_string_assign_new(&header_element->key, 
+                    req->header_name_end - req->header_name_start, req->header_name_start);
+            lt_string_assign_new(&header_element->value, 
+                    req->header_end - req->header_start, req->header_start);
+            
+            lowcase_key_copy_from_origin(&header_element->lowcase_key, &header_element->key);
         }
     }
     return 0;

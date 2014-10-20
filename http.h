@@ -18,6 +18,12 @@ typedef struct string {
     int length;
     char *data;
 } lt_string_t;
+static inline void lt_string_assign_new(lt_string_t *p, int length, char *data) 
+{
+    p->data = data;
+    p->length = length;
+    p->data[p->length] = '\0';
+}
 
 typedef struct conf {
     int efd_distributor;
@@ -142,9 +148,9 @@ void ignore_sigpipe(void);
 
 http_t *http_master_new(base_t *, conf_t *);
 
-struct http_header_element {
+typedef struct http_header_element {
     int hash;
     struct string key;
     struct string value;
-    char  *lowcase_key;
+    struct string lowcase_key;
 } lt_http_header_element_t;
