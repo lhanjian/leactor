@@ -14,6 +14,10 @@
 #include <sys/eventfd.h>
 
 #define DEFAULT_HEADER_BUFFER_SIZE (16384)
+typedef struct string {
+    int length;
+    char *data;
+} lt_string_t;
 
 typedef struct conf {
     int efd_distributor;
@@ -52,15 +56,28 @@ typedef struct request {
 
     int http_major;
     int http_minor;
-    char *http_protocol;
 
     char lowcase_header[32];
 
+    struct upstream *upstream;
 
-    upstream_t *upstream;
+    struct string request_line;
+    int request_length;
+
+    struct string method_name;
+    char *method_end;
     int method;
 
-    char *method_end;
+    struct string http_protocol;
+    char *http_protocol_end;
+    
+    struct string uri;
+    struct string unparsed_uri;
+
+    int valid_unparsed_uri;
+
+    struct lt_memory_pool *header_pool;
+    struct lt_memory_pool  header_pool_manager;
 } request_t;
 
 
@@ -104,7 +121,7 @@ typedef struct listening {
     struct sockaddr saddr;
 
     struct lt_memory_pool *connection_pool;
-    struct lt_memory_pool *connection_pool_manager;
+    struct lt_memory_pool connection_pool_manager;
     struct connection listen_conn;
     struct connection *client_list;
     struct connection *downstream_list;;
@@ -124,3 +141,10 @@ typedef struct http {
 void ignore_sigpipe(void);
 
 http_t *http_master_new(base_t *, conf_t *);
+
+struct http_header_element {
+    int hash;
+    struct string key;
+    struct string value;
+    char  *lowcase_key;
+} lt_http_header_element_t;

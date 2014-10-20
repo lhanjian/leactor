@@ -1,8 +1,9 @@
 #include "http.h"
+#include "ngx_http_parse.h"
 static int get_addrinfo_with_bind(http_t *http);
 static int http_add_listen(http_t *http, conf_t *conf);
 static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
-static int http_accept_distributor(int fd, http_t* http);
+static int http_accept_distributor(event_t *ev, void* http);
 /*
 void 
 ignore_sigpipe(void)
@@ -36,8 +37,8 @@ http_t *http_master_new(base_t *base, conf_t *conf)
     }
 
     http->listen.ev = lt_io_add(http->base, http->listen.fd, 
-            LV_LAG|LV_FDRD, (func_t)http_accept_distributor/*TODO http_cb*/, 
-            (void *)http/*TODO http_cb_args*/, INF);
+            LV_LAG|LV_FDRD, http_accept_distributor/*TODO http_cb*/, 
+            http/*TODO http_cb_args*/, INF);
     return http;
 }
 
@@ -52,8 +53,9 @@ int send_to_child(int seq, int fd)
     return rv;
 }
 
-int http_accept_distributor(int fd, http_t* http)
+int http_accept_distributor(event_t *ev, void *arg)
 {
+    http_t *http = (http_t *)arg;
     static unsigned long seq_count = 0;
     int rv = send_to_child(seq_count % http->core_amount, 
             http->listen.fd);
@@ -153,7 +155,6 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
 }
 
 int set_http_data_coming_timeout();
-int http_parse_request_line(request_t *req, lt_buffer_t *buf);
 
 void http_create_request(connection_t *conn)
 {
@@ -163,6 +164,9 @@ void http_create_request(connection_t *conn)
     req->header_in = conn->buf;
     req->state = 0;
 
+    lt_new_memory_pool_manager(&req->header_pool_manager);
+    req->header_pool = lt_new_memory_pool(sizeof(lt_http_header_element_t), 
+                                                 req->header_pool);
 }
 /*
 int http_read_request_header(request_t *req)
@@ -174,15 +178,101 @@ int http_read_request_header(request_t *req)
 
 }
 */
-int 
-http_process_request_line(int fd, void *arg)
+int http_request_line_parsed(request_t *req, int rv)
+{
+    req->request_line.length = req->request_end - req->request_start;
+    req->request_line.data = req->request_start;
+    req->request_length = req->header_in->pos - req->request_start;
+
+    req->method_name.length = req->method_end - req->request_start + 1;
+    req->method_name.data = req->request_line.data;
+
+    if (req->http_protocol.data) {
+        req->http_protocol.length = req->request_end - req->http_protocol.data;
+    }
+
+    //process_request_uri
+    if (req->args_start) {
+        req->uri.length = req->args_start - 1 - req->uri_start;
+    } else {
+        req->uri.length = req->uri_end - req->uri_start;
+    }
+
+    if (req->complex_uri || req->quoted_uri) {
+        //TODO
+    } else {
+        req->uri.data = req->uri_start;
+    }
+
+    req->unparsed_uri.length = req->uri_end - req->uri_start;
+    req->unparsed_uri.data = req->uri_start;
+
+    req->valid_unparsed_uri = req->space_in_uri ? 0 : 1;
+
+    if (req->uri_ext) {
+        //TODO
+    }
+
+    if (req->args_start && req->uri_end > req->args_start) {
+        //TODO
+    }
+    //process_request_uri OVER
+    if (req->host_start && req->host_end) {
+        //TODO???
+    }
+
+    if (req->http_version < 1000) {
+        //TODO 
+    }
+    
+    //TODO init_list
+    return 0;
+}
+
+int http_process_request_headers(event_t *ev, void *arg)
+{
+//    if (timeout) TODO
+    request_t *req = (request_t *)arg;
+
+    int rc = LAGAIN;
+    for (;;) {
+        if (rc == LAGAIN) {
+            if (req->header_in->pos == req->header_in->end) {
+            //TODO
+            }
+
+//            ssize_t n = http_read_request_header(req);
+        }
+
+        rc = ngx_http_parse_header_line(req, req->header_in, 0/*TODO?*/);
+
+        if (rc == LOK) {
+            req->request_length += req->header_in->pos - req->header_name_start;
+            if (req->invalid_header) {
+                continue;
+            }
+
+            lt_http_header_element_t *header_element = 
+                lt_alloc(req->header_pool, &req->header_pool_manager);
+
+        }
+    }
+    return 0;
+}
+
+int http_process_request_line(event_t *event, void *arg)
 {
     request_t *req = (request_t *)arg;
 
 //    http_read_request_header(r);
     int rv = ngx_http_parse_request_line(req, req->header_in);
+
     if (rv == LOK) {
-        req->request
+        http_request_line_parsed(req, rv);
+        //event->callback = 0
+
+        event->callback = http_process_request_headers;
+        http_process_request_headers(event, req);
 
     }
 
@@ -190,7 +280,7 @@ http_process_request_line(int fd, void *arg)
 }
 
 
-int http_data_coming(int fd, void *arg)
+int http_data_coming(event_t *ev, void *arg)
 {
     connection_t *conn = (connection_t *)arg;
 
@@ -204,7 +294,7 @@ int http_data_coming(int fd, void *arg)
     } else {
     }
 
-    int rv = lt_recv(fd, buf, DEFAULT_HEADER_BUFFER_SIZE);
+    int rv = lt_recv(conn->fd, buf, DEFAULT_HEADER_BUFFER_SIZE);
     if (rv == LAGAIN) {
 //        set_http_data_coming_timer();
 //        conn->status = EFAULT;
@@ -216,7 +306,7 @@ int http_data_coming(int fd, void *arg)
 
     http_create_request(conn);
     conn->ev->callback = http_process_request_line;
-    http_process_request_line(conn->fd, conn);
+    http_process_request_line(conn->ev, conn);
 
     return 0;
 }
@@ -225,7 +315,7 @@ connection_t *
 http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 {
     connection_t *conn = lt_alloc(http->listen.connection_pool, 
-            http->listen.connection_pool_manager);
+            &http->listen.connection_pool_manager);
 
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
@@ -233,7 +323,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->buf = lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, 
             DEFAULT_HEADER_BUFFER_SIZE);
 
-    conn->status = DEFAULT;
+    conn->status = 0;
 
     lt_new_memory_pool_manager(&conn->request_pool_manager);
 
@@ -246,7 +336,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     return conn;
 }
 
-int start_accept(int test, void *arg)
+int start_accept(event_t *ev, void *arg)
 {
     http_t *http = (http_t *)arg;
 
@@ -277,10 +367,10 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
         return NULL;
     }
 
-    http->listen.connection_pool_manager = lt_new_memory_pool_manager(NULL);
+    lt_new_memory_pool_manager(&http->listen.connection_pool_manager);
 
     http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
-                                    http->listen.connection_pool_manager);
+                                    &http->listen.connection_pool_manager);
 
     recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 

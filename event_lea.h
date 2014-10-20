@@ -54,7 +54,6 @@ typedef int              numlist_t;
 typedef int              epfd_t;
 typedef numlist_t        numactlist_t;
 typedef numlist_t        numeeadylist_t;
-typedef            int (*func_t)(int fd, void *arg);
 
 typedef int res_t;
 /*typedef union {
@@ -92,7 +91,7 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *, lt_memory_pool_t *);
 
 typedef int flag_t;
 typedef struct event {
-    func_t        callback;
+    int         (*callback)(struct event *, void *arg);
     void         *arg;
     flag_t        flag;
     int           fd; 
@@ -103,6 +102,8 @@ typedef struct event {
     struct event *next_active_ev;
 //    int     epfd;
 } event_t;
+
+typedef            int (*func_t)(struct event *, void *arg);
 
 typedef struct min_heap {
         event_t **p;
@@ -190,5 +191,10 @@ res_t base_free(base_t *base_rlve);
 ssize_t lt_recv(int, lt_buffer_t *, size_t);
 int lt_accept(int, struct sockaddr *sockaddr);
 
+struct lt_string {
+    int len;
+    int free;
+    char buf[];
+};
 #endif
 

@@ -170,7 +170,7 @@ lt_ev_process_and_moveout(active_evlist_t *actlist, lt_time_t nowtime)
         } else if (event->deleted){ //cluster some event and del it;
             
         } else {
-            event->callback(event->fd, event->arg);
+            event->callback(event, event->arg);
             event->deleted = event->flag & LV_ONESHOT;//TODO
         }
     }
@@ -191,7 +191,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
                 actlist->head = ev;//lag
                 break;
             } else {
-                ev->callback(ev->fd, ev->arg);//directl
+                ev->callback(ev, ev->arg);//directl
             } 
         } else if(ev_array[i].events & EPOLLRDHUP) {
             //TODO
@@ -204,7 +204,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
             ev_prev->next_active_ev = ev;
                 ev_prev = ev;
             } else {
-                ev->callback(ev->fd, ev->arg); 
+                ev->callback(ev, ev->arg); 
             }
         }
 
