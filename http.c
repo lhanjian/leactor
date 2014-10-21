@@ -234,7 +234,7 @@ static inline lowcase_key_copy_from_origin(struct string *low, struct string *or
     low->data = origin->data;
     low->length = origin->length;
     for (int i = 0; i < origin->length; i++) {
-        low->data[i] = tolower(origin->data[i]);
+        low->data[i] = tolower(origin->data[i]);//TODO new data
     }
 }
 int http_process_request_headers(event_t *ev, void *arg)

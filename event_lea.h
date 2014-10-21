@@ -8,7 +8,7 @@
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-
+#include <ctype.h>
 //system independence
 #include <sys/epoll.h>
 #include <sys/uio.h>
