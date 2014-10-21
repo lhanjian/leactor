@@ -229,14 +229,84 @@ int http_request_line_parsed(request_t *req, int rv)
     return 0;
 }
 
-static inline lowcase_key_copy_from_origin(struct string *low, struct string *origin)
+static inline void lowcase_key_copy_from_origin(struct string *low, struct string *origin)
 {
     low->data = origin->data;
     low->length = origin->length;
     for (int i = 0; i < origin->length; i++) {
         low->data[i] = tolower(origin->data[i]);//TODO new data
     }
+    return ;
 }
+
+int 
+http_process_host(request_t *req, lt_string_t *host/*, int off*/)
+{
+    enum {
+        sw_usual = 0,
+        sw_literal,
+        sw_rest
+    } state;
+
+    state = sw_usual;
+
+    size_t dot_pos = host->length;
+    size_t host_len = host->length;
+
+    char *h = host->data;
+    
+    char ch;
+    for (int i = 0; i < host->length; i++) {
+        ch = h[i];
+        switch(ch) {
+            case '.':
+                if (dot_pos == i - 1) {
+                    return LERROR;
+                }
+                dot_pos = i;
+                break;
+            case ':':
+                if (state == sw_usual) {
+                    host_len = i;
+                    state = sw_rest;
+                }
+                break;
+            case '[':
+                if (i == 0) {
+                    state = sw_literal;
+                }
+                break;
+            case ']':
+                if (state == sw_literal) {
+                    host_len = i + 1;
+                    state = sw_rest;
+                }
+                break;
+            case '\0':
+                return LERROR;
+
+            default:
+                if (ch == '/') {
+                    return LERROR;
+                }
+                break;
+        }
+
+    }
+
+    if (dot_pos == host_len - 1) {
+        host_len--;
+    }
+
+    if (host_len == 0) {
+        return LERROR;
+    }
+
+    host->length  = host_len;
+    return LOK;
+}
+
+
 int http_process_request_headers(event_t *ev, void *arg)
 {
 //    if (timeout) TODO
@@ -247,7 +317,6 @@ int http_process_request_headers(event_t *ev, void *arg)
             if (req->header_in->pos == req->header_in->end) {
             //TODO
             }
-
 //            ssize_t n = http_read_request_header(req);
         }
 
@@ -258,7 +327,8 @@ int http_process_request_headers(event_t *ev, void *arg)
             if (req->invalid_header) {
                 continue;
             }
-            struct http_header_element *header_element = lt_alloc(req->header_pool, &req->header_pool_manager);
+            struct http_header_element *header_element = 
+                lt_alloc(req->header_pool, &req->header_pool_manager);
 
             header_element->hash = req->header_hash;//inline can reduce code number
             lt_string_assign_new(&header_element->key, 
@@ -267,6 +337,15 @@ int http_process_request_headers(event_t *ev, void *arg)
                     req->header_end - req->header_start, req->header_start);
             
             lowcase_key_copy_from_origin(&header_element->lowcase_key, &header_element->key);
+
+            http_process_host(req, &header_element->value/*, 28*/);
+        }
+
+        if (rc == HTTP_PARSE_HEADER_DONE) {
+            req->request_length += req->header_in->pos - req->header_name_start;
+//            req->http_state = HTTP_PROCE
+//            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
+
         }
     }
     return 0;
@@ -285,7 +364,6 @@ int http_process_request_line(event_t *event, void *arg)
 
         event->callback = http_process_request_headers;
         http_process_request_headers(event, req);
-
     }
 
     return 0;
@@ -364,7 +442,6 @@ int start_accept(event_t *ev, void *arg)
         }
 
         connection_t *conn = http_init_connection(http, fd, peer_addr);
-
 
         continue;
     }

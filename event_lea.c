@@ -196,25 +196,28 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
         } else if(ev_array[i].events & EPOLLRDHUP) {
             //TODO
         }
+    }
+
     i++;
     event_t *ev_prev = actlist->head;
+
     for (; i < ready; i++) {
         event_t *ev = (event_t *)ev_array[i].data.ptr;
         if (ev->flag & LV_LAG && ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
             ev_prev->next_active_ev = ev;
-                ev_prev = ev;
-            } else {
-                ev->callback(ev, ev->arg); 
-            }
+            ev_prev = ev;
+        } else {
+            ev->callback(ev, ev->arg); 
         }
+    }
 
     return ;
 }
 
-int timerfd_expiration(int fd, void *arg)
+int timerfd_expiration(struct event *event, void *arg)
 {
     uint64_t value;
-    ssize_t rv = read(fd, &value, sizeof(uint64_t));
+    ssize_t rv = read(event->fd, &value, sizeof(uint64_t));
     if (rv != sizeof(uint64_t)) {
         perror("timerfd read\n");
     }
@@ -237,10 +240,12 @@ void timerfd_epoll_init(struct timespec timeout, base_t *base)
             .tv_nsec = timeout.tv_nsec
         }
     };
+    /*
     struct epoll_event ev = {
         .data = { .fd = tfd},
-        .events = EPOLLIN /*| EPOLLET*/
+        .events = EPOLLIN
     };
+    */
 
     timerfd_settime(tfd, 0, &new_value, &old_value);
     

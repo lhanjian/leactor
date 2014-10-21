@@ -14,10 +14,23 @@
 #include <sys/eventfd.h>
 
 #define DEFAULT_HEADER_BUFFER_SIZE (16384)
+#define HTTP_PARSE_HEADER_DONE 1
 typedef struct string {
     int length;
     char *data;
 } lt_string_t;
+
+typedef struct hash {
+    struct string *key;
+    struct string *value;
+    unsigned hash_value;
+} lt_hash_t;
+
+typedef struct hash_table {
+    struct hash **buckets;//buckets array of struct hash pointer
+    int size;
+} lt_hash_table_t;
+
 static inline void lt_string_assign_new(lt_string_t *p, int length, char *data) 
 {
     p->data = data;
@@ -154,3 +167,4 @@ typedef struct http_header_element {
     struct string value;
     struct string lowcase_key;
 } lt_http_header_element_t;
+
