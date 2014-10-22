@@ -91,7 +91,7 @@ lt_base_init(void)
 
     min_heap_constructor_(&base->timeheap);
 
-    int tfd = timerfd_create(CLOCK_MONOTONIC_RAW, TFD_NONBLOCK);
+    int tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (tfd < 0) {
         perror("timerfd_create");
     }
@@ -254,7 +254,7 @@ void timerfd_epoll_init(struct timespec timeout, base_t *base)
 }
 
 res_t 
-lt_base_loop(base_t *base, /*lt_time_t*/struct timespec timeout)
+lt_base_loop(base_t *base, int timeout)
 {
 	lt_time_t start, /*now,*/ after;
 
@@ -262,14 +262,14 @@ lt_base_loop(base_t *base, /*lt_time_t*/struct timespec timeout)
     int ready = 0;
 
     start = lt_gettime();
-    timerfd_epoll_init(timeout, base);
-
+//    timerfd_epoll_init(timeout, base);
     int epevents_len = INIT_EPEV;
+    int ep_to = timeout;
 
     for (;;) {
         struct epoll_event epevents[epevents_len];
         ready = epoll_wait(base->epfd, /*base->*/epevents, 
-				/*base->readylist.event_len*/epevents_len, -1);//TODO:timerfd_create
+				/*base->readylist.event_len*/epevents_len, ep_to);//TODO:timerfd_create
         if (ready == -1) {
 			perror("epoll_wait");
             return -1;
@@ -277,11 +277,11 @@ lt_base_loop(base_t *base, /*lt_time_t*/struct timespec timeout)
         
         after = lt_gettime();
 		diff = lt_time_a_sub_b(after, start);//SUB TODO
-/*		if (time_a_gt_b(diff,>,timeout)) {
+		if (time_a_gt_b(diff,>,timeout)) {
 			fprintf(stderr, "loop expired\n");
 			break;
 		}
-*/
+
 		lt_loop_init_actlist(base, epevents, ready);
 
         lt_ev_process_and_moveout(&base->activelist, after);
@@ -299,7 +299,7 @@ lt_gettime()
     int rv;
     lt_time_t time_now;
 
-    rv = clock_gettime(CLOCK_MONOTONIC_RAW, &time_now);
+    rv = clock_gettime(CLOCK_MONOTONIC, &time_now);
 
     if (rv == -1) {
         perror("gettime error");

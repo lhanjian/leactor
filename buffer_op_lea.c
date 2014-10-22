@@ -96,7 +96,7 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
         switch (errsv) {
             case EAGAIN: return LEAGAIN;
             case EINTR:  return LEINTR;
-            defaut: break;//TODO
+            default: break;//TODO
         }
 
     } else if (!rv) {

@@ -1,17 +1,6 @@
 #include "event_lea.h"
 #include "http.h"
-/*
-#include <unistd.h>
-#include <sys/socket.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <string.h>
-#include <netdb.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
-*/
+
 int child(conf_t *conf);
 int father(conf_t *conf);
 int main()
@@ -48,8 +37,8 @@ int father(conf_t *conf/*start restart ...  other conf*/)
        exit(EXIT_FAILURE);
    }
 
-   http_t *main = http_master_new(base, conf);
-   if (!main) {
+   http_t *father = http_master_new(base, conf);
+   if (!father) {
        fprintf(stderr, "main http_t fail to create\n");
        exit(EXIT_FAILURE);
    }

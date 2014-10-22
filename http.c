@@ -1,9 +1,10 @@
 #include "http.h"
 #include "ngx_http_parse.h"
 static int get_addrinfo_with_bind(http_t *http);
-static int http_add_listen(http_t *http, conf_t *conf);
-static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
+//static int http_add_listen(http_t *http, conf_t *conf);
+//static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
 static int http_accept_distributor(event_t *ev, void* http);
+static int http_add_listen(http_t *http, conf_t *conf);
 /*
 void 
 ignore_sigpipe(void)
@@ -441,7 +442,8 @@ int start_accept(event_t *ev, void *arg)
             exit(EXIT_FAILURE);
         }
 
-        connection_t *conn = http_init_connection(http, fd, peer_addr);
+//        connection_t *conn = //conn in pool
+            http_init_connection(http, fd, peer_addr);
 
         continue;
     }

@@ -467,7 +467,7 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
                 r->http_minor = 9;
                 goto done;
             case 'H':
-                r->http_protocol = p;
+                r->http_protocol.data = p;
                 state = sw_http_H;
                 break;
             default:
@@ -609,7 +609,7 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
                 r->http_minor = 9;
                 goto done;
             case 'H':
-                r->http_protocol = p;
+                r->http_protocol.data = p;
                 state = sw_http_H;
                 break;
             default:
@@ -663,7 +663,7 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
                 r->http_minor = 9;
                 goto done;
             case 'H':
-                r->http_protocol = p;
+                r->http_protocol.data = p;
                 state = sw_http_H;
                 break;
             default:
@@ -840,7 +840,7 @@ ngx_http_parse_header_line(request_t *r, lt_buffer_t *b,
 
     /* the last '\0' is not needed because string is zero terminated */
 
-    static u_char  lowcase[] =
+    static char  lowcase[] =
         "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
         "\0\0\0\0\0\0\0\0\0\0\0\0\0-\0\0" "0123456789\0\0\0\0\0\0"
         "\0abcdefghijklmnopqrstuvwxyz\0\0\0\0\0"
@@ -875,7 +875,7 @@ ngx_http_parse_header_line(request_t *r, lt_buffer_t *b,
             default:
                 state = sw_name;
 
-                c = lowcase[ch];
+                c = lowcase[(unsigned char)ch];
 
                 if (c) {
                     hash = ngx_hash(0, c);//TODO
@@ -910,7 +910,7 @@ ngx_http_parse_header_line(request_t *r, lt_buffer_t *b,
 
         /* header name */
         case sw_name:
-            c = lowcase[ch];
+            c = lowcase[(unsigned char)ch];
 
             if (c) {
                 hash = ngx_hash(hash, c);
