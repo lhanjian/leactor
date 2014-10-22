@@ -90,12 +90,13 @@ lt_base_init(void)
         lt_new_memory_pool(sizeof(event_t), &base->readylist.event_pool_manager, NULL);
 
     min_heap_constructor_(&base->timeheap);
-
+/*
     int tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (tfd < 0) {
         perror("timerfd_create");
     }
     base->timerfd = tfd;
+    */
 
     return base;
 }

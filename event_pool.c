@@ -58,7 +58,6 @@ lt_alloc(lt_memory_pool_t *pool, lt_memory_pool_t *manager)
     } else {
         pool->next = lt_new_memory_pool(pool->one_item_size, manager, NULL);
         pool = pool->next;//单向循环或者双向?TODO
-
         pool->next = manager;
         alloc_rv = lt_alloc(pool, manager);
     }

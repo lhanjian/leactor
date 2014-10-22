@@ -416,6 +416,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
+
     
     conn->buf = lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, 
             DEFAULT_HEADER_BUFFER_SIZE);
@@ -471,9 +472,13 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 
 //    recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
+    http->listen.fd = conf->listen_fd;
     http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
             start_accept, http, NO_TIMEOUT);
 
+    lt_new_memory_pool_manager(&http->listen.buf_pool_manager);
+    lt_new_memory_pool(sizeof(lt_buffer_t), 
+            &http->listen.buf_pool_manager, NULL);
     return http;
 }
 
