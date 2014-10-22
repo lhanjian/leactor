@@ -18,15 +18,15 @@ static void init_pool_list(lt_memory_pool_t *pool);
 } lt_memory_pool_t;*/
 
 lt_memory_pool_t *
-lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager, ...)
+lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager, lt_memory_pool_t *pos)
 {
 //    lt_memory_pool_t *new = 
-    va_list ap;
-    va_start(ap, manager);
+/*    va_list ap;
+    va_start(ap, manager);*/
 
     lt_memory_pool_t *new;
-    lt_memory_pool_t *pos = va_arg(ap, lt_memory_pool_t *);
-    va_end(ap);
+//    lt_memory_pool_t *pos = va_arg(ap, lt_memory_pool_t *);
+//    va_end(ap);
 
     if (!pos) {
         new = malloc(sizeof(lt_memory_pool_t));
@@ -56,7 +56,7 @@ lt_alloc(lt_memory_pool_t *pool, lt_memory_pool_t *manager)
         alloc_rv = (char *)pool->pos->next + sizeof(lt_memory_piece_t);
         pool->pos = pool->pos->next;
     } else {
-        pool->next = lt_new_memory_pool(pool->one_item_size, manager);
+        pool->next = lt_new_memory_pool(pool->one_item_size, manager, NULL);
         pool = pool->next;//单向循环或者双向?TODO
 
         pool->next = manager;

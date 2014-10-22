@@ -155,11 +155,13 @@ typedef struct http {
 //    struct connection *connection_list;
     struct listening listen;
     int core_amount;
+    int efd;
 } http_t;
 
 void ignore_sigpipe(void);
 
 http_t *http_master_new(base_t *, conf_t *);
+http_t *http_worker_new(base_t *, conf_t *);
 
 typedef struct http_header_element {
     int hash;

@@ -26,10 +26,11 @@ http_t *http_master_new(base_t *base, conf_t *conf)
         perror("malloc http");
         return NULL;
     }
+    http->base = base;
 
-    http->listen.bind_addr = NULL;//ALL available localaddr 
+    http->listen.bind_addr = "127.0.0.1";//ALL available localaddr 
 //TODO:sustitute with JSON conf file
-    http->listen.bind_port = "80";//same to UP
+    http->listen.bind_port = "8080";//same to UP
 
     int rv = http_add_listen(http, conf);
     if (rv) {
@@ -37,16 +38,18 @@ http_t *http_master_new(base_t *base, conf_t *conf)
         return NULL;
     }
 
+    http->efd = conf->efd_distributor;
+
     http->listen.ev = lt_io_add(http->base, http->listen.fd, 
-            LV_LAG|LV_FDRD, http_accept_distributor/*TODO http_cb*/, 
-            http/*TODO http_cb_args*/, INF);
+            LV_CONN|LV_FDRD, http_accept_distributor/*TODO http_cb*/, 
+            http/*TODO http_cb_args*/, NO_TIMEOUT);
     return http;
 }
 
-int send_to_child(int seq, int fd)
+int send_to_child(int evfd)
 {
     uint64_t count = 1;
-    int rv = write(seq, &count, sizeof(count));
+    int rv = write(evfd, &count, sizeof(count));
     if (rv != sizeof(count)) {
         perror("eventfd write failed");
         return -1;
@@ -57,13 +60,12 @@ int send_to_child(int seq, int fd)
 int http_accept_distributor(event_t *ev, void *arg)
 {
     http_t *http = (http_t *)arg;
+    http->core_amount = 1;
     static unsigned long seq_count = 0;
-    int rv = send_to_child(seq_count % http->core_amount, 
-            http->listen.fd);
+    int rv = send_to_child(http->efd);
     if (rv == -1) {
         fprintf(stderr, "eventfd send failed");
     }
-
     seq_count++;
 
     return 0;
@@ -92,6 +94,8 @@ int get_addrinfo_with_bind(http_t *http)
             perror("listen socket");
             continue;
         }
+
+        http->listen.fd = listen_sock;
 
         int yes = 1;
         if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, 
@@ -123,6 +127,7 @@ int send_listenfd_to_child(int pfd[2], int fd)
 {
     close(pfd[0]);
     write(pfd[1], &fd, sizeof(fd));
+//    ioctl(pfd[1], I_SENDFD, *fd);
     close(pfd[1]);
 
     return 0;
@@ -167,7 +172,7 @@ void http_create_request(connection_t *conn)
 
     lt_new_memory_pool_manager(&req->header_pool_manager);
     req->header_pool = lt_new_memory_pool(sizeof(lt_http_header_element_t), 
-                                                 req->header_pool);
+                                                 req->header_pool, NULL);
 }
 /*
 int http_read_request_header(request_t *req)
@@ -419,7 +424,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     lt_new_memory_pool_manager(&conn->request_pool_manager);
 
     conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
-            &conn->request_pool_manager);
+            &conn->request_pool_manager, NULL);
 
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
             http_data_coming, conn, INF);
@@ -430,7 +435,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 int start_accept(event_t *ev, void *arg)
 {
     http_t *http = (http_t *)arg;
-
+    printf("coming\n");
     for (int i = 0; i < SOMAXCONN; i++) {//TODO
         struct sockaddr peer_addr;
         int fd = lt_accept(http->listen.fd, &peer_addr);// maybe 512
@@ -461,11 +466,11 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
     lt_new_memory_pool_manager(&http->listen.connection_pool_manager);
 
     http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
-                                    &http->listen.connection_pool_manager);
+                                    &http->listen.connection_pool_manager, NULL);
 
     recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
-    http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD, 
+    http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
             start_accept, http, NO_TIMEOUT);
 
     return http;

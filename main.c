@@ -20,6 +20,7 @@ int main()
             exit(EXIT_FAILURE);
             break;
         case 0:
+            sleep(15);
             child(conf);
             exit(EXIT_SUCCESS);
         default:
@@ -38,11 +39,12 @@ int father(conf_t *conf/*start restart ...  other conf*/)
    }
 
    http_t *father = http_master_new(base, conf);
-   if (!father) {
-       fprintf(stderr, "main http_t fail to create\n");
+
+   if (father == NULL) {
+       fprintf(stderr, "father's http_t fail to create\n");
        exit(EXIT_FAILURE);
    }
-   
+
    lt_base_loop(base, NO_TIMEOUT);
    return 0;
 }
@@ -52,6 +54,11 @@ int child(conf_t *conf)
     base_t *base = lt_base_init();
     if (base == NULL) {
         fprintf(stderr, "child base_init error");
+        exit(EXIT_FAILURE);
+    }
+    http_t *child = http_worker_new(base, conf);
+    if (child == NULL) {
+        fprintf(stderr, "child's http_t fail to create\n");
         exit(EXIT_FAILURE);
     }
 

@@ -16,11 +16,12 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #define MAX_ACTIVE
 #define MAX_READY
 #define DEFAULT_BUF_SIZE (16384)
 #define INIT_EPEV (512)
-#define EVLIST_LEN (DEFAULT_MMAP_THRESHOLD_MAX)
+#define EVLIST_LEN (512*512)
 #define EPEV_MAX EVLIST_LEN
 #define LV_LAG (0x0000008)
 #define LV_CONN (0x0000004)
@@ -81,7 +82,7 @@ typedef struct lt_memory_pool {
 
 lt_memory_manager_t *
                   lt_new_memory_pool_manager(lt_memory_manager_t *);
-lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size, lt_memory_manager_t *manager, ...);
+lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size, lt_memory_manager_t *manager, lt_memory_pool_t *);
 void*             lt_alloc(lt_memory_pool_t *pool, lt_memory_manager_t *manager);
 void              lt_free(lt_memory_pool_t *pool, void *object_contents);
 void              lt_destroy_memory_pool(lt_memory_pool_t *pool, lt_memory_pool_t *manager);

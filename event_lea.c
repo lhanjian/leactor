@@ -87,7 +87,7 @@ lt_base_init(void)
     /*base->readylist.event_pool_manager = */
     lt_new_memory_pool_manager(&base->readylist.event_pool_manager);
     base->readylist.event_pool = 
-        lt_new_memory_pool(sizeof(event_t), &base->readylist.event_pool_manager);
+        lt_new_memory_pool(sizeof(event_t), &base->readylist.event_pool_manager, NULL);
 
     min_heap_constructor_(&base->timeheap);
 
