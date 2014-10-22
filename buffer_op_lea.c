@@ -156,5 +156,3 @@ lt_accept(int fd, struct sockaddr *peer)
 
     return conn_fd;
 }
-
-

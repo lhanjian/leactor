@@ -45,27 +45,25 @@ http_t *http_master_new(base_t *base, conf_t *conf)
             http/*TODO http_cb_args*/, NO_TIMEOUT);
     return http;
 }
-
+/*
 int send_to_child(int evfd)
 {
-    uint64_t count = 1;
-    int rv = write(evfd, &count, sizeof(count));
-    if (rv != sizeof(count)) {
-        perror("eventfd write failed");
-        return -1;
-    }
     return rv;
 }
+*/
 
 int http_accept_distributor(event_t *ev, void *arg)
 {
     http_t *http = (http_t *)arg;
-    http->core_amount = 1;
+//    http->core_amount = 1;
     static unsigned long seq_count = 0;
-    int rv = send_to_child(http->efd);
-    if (rv == -1) {
-        fprintf(stderr, "eventfd send failed");
+    uint64_t count = 1;
+    int rv = write(http->efd, &count, sizeof(count));
+    if (rv != sizeof(count)) {
+        perror("eventfd write failed");
+        return -1;
     }
+    
     seq_count++;
 
     return 0;
@@ -122,7 +120,7 @@ int get_addrinfo_with_bind(http_t *http)
     freeaddrinfo(res);
     return 0;
 }
-
+/*
 int send_listenfd_to_child(int pfd[2], int fd)
 {
     close(pfd[0]);
@@ -132,6 +130,7 @@ int send_listenfd_to_child(int pfd[2], int fd)
 
     return 0;
 }
+*/
 
 int http_add_listen(http_t *http, conf_t *conf)
 {
@@ -141,7 +140,9 @@ int http_add_listen(http_t *http, conf_t *conf)
         return -1;
     }
 
-    send_listenfd_to_child(conf->pfd, http->listen.fd);
+    conf->listen_fd = http->listen.fd;
+
+//    send_listenfd_to_child(conf->pfd, http->listen.fd);
 
     rv = listen(http->listen.fd, SOMAXCONN);
     if (rv) {
@@ -149,16 +150,16 @@ int http_add_listen(http_t *http, conf_t *conf)
         return -1;
     }
 
-
     return 0;
 }
-
+/*
 void recv_listenfd_to_child(int pfd[2], int *fd)
 {
     close(pfd[1]);
     read(pfd[0], fd, sizeof(int));
     close(pfd[0]);
 }
+*/
 
 int set_http_data_coming_timeout();
 
@@ -468,7 +469,7 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
     http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
                                     &http->listen.connection_pool_manager, NULL);
 
-    recv_listenfd_to_child(conf->pfd, &http->listen.fd);
+//    recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
     http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
             start_accept, http, NO_TIMEOUT);

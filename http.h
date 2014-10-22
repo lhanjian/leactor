@@ -40,7 +40,8 @@ static inline void lt_string_assign_new(lt_string_t *p, int length, char *data)
 
 typedef struct conf {
     int efd_distributor;
-    int pfd[2];
+//    int pfd[2];
+    int listen_fd;
 } conf_t;
 
 struct upstream {
