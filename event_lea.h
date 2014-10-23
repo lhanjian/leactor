@@ -38,13 +38,12 @@
 #define LEAGAIN (-3)
 #define LEINTR  (-4)
 typedef struct lt_buffer {
-    char *start;
+    char start[DEFAULT_BUF_SIZE];
     char *pos;
     char *last;
     char *end;
     int head;
     int written;
-    char buf[DEFAULT_BUF_SIZE];
     struct lt_buffer *next;
 } lt_buffer_t;
 //#define 
