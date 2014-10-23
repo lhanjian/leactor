@@ -16,7 +16,7 @@ lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
     if (buf == NULL) {
         return NULL;
     }
-
+//TODO
     buf->head = 1;
 
     if (size > DEFAULT_BUF_SIZE) {
@@ -116,7 +116,7 @@ lt_recv(int fd, lt_buffer_t *lt_buf, size_t size)
             return LCLOSE;
     } else if (n > 0) {
         lt_buf->pos += n;
-            return n;
+        return n;
     } else if (n == -1) {
         int errsv = errno;
         if (errsv == EAGAIN) {
@@ -138,7 +138,6 @@ lt_accept(int fd, struct sockaddr *peer)
     if (conn_fd == -1) {
         int err = errno;
         perror("accept4");
-
         switch(err) { 
             case EAGAIN:
                 return LAGAIN;//complete?

@@ -27,7 +27,6 @@ http_t *http_master_new(base_t *base, conf_t *conf)
         return NULL;
     }
     http->base = base;
-
     http->listen.bind_addr = "127.0.0.1";//ALL available localaddr 
 //TODO:sustitute with JSON conf file
     http->listen.bind_port = "8080";//same to UP
@@ -163,7 +162,7 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
 
 int set_http_data_coming_timeout();
 
-void http_create_request(connection_t *conn)
+request_t *http_create_request(connection_t *conn)
 {
     request_t *req = 
         lt_alloc(conn->request_pool, &conn->request_pool_manager);
@@ -173,7 +172,8 @@ void http_create_request(connection_t *conn)
 
     lt_new_memory_pool_manager(&req->header_pool_manager);
     req->header_pool = lt_new_memory_pool(sizeof(lt_http_header_element_t), 
-                                                 req->header_pool, NULL);
+                                                 &req->header_pool_manager, NULL);
+    return req;
 }
 /*
 int http_read_request_header(request_t *req)
@@ -385,11 +385,11 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting
     }
 
-    lt_buffer_t *buf;
-    if (conn->buf) {
+    lt_buffer_t *buf = conn->buf?conn->buf:NULL;
+/*    if (conn->buf) {
         buf = conn->buf;
     } else {
-    }
+    }*/
 
     int rv = lt_recv(conn->fd, buf, DEFAULT_HEADER_BUFFER_SIZE);
     if (rv == LAGAIN) {
@@ -397,13 +397,15 @@ int http_data_coming(event_t *ev, void *arg)
 //        conn->status = EFAULT;
         //push back lt_buffer to pool
         return 0;
-    } if (rv == LCLOSE) {
+    } else if (rv == LCLOSE) {
         //http_close_connecting
+    } else if (rv == LERROR) {
+        //http_close_connecting 
     }
 
-    http_create_request(conn);
+    request_t *req = http_create_request(conn);
     conn->ev->callback = http_process_request_line;
-    http_process_request_line(conn->ev, conn);
+    http_process_request_line(conn->ev, req);
 
     return 0;
 }
@@ -417,14 +419,12 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
 
-    
     conn->buf = lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, 
             DEFAULT_HEADER_BUFFER_SIZE);
 
     conn->status = 0;
 
     lt_new_memory_pool_manager(&conn->request_pool_manager);
-
     conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
             &conn->request_pool_manager, NULL);
 
@@ -449,8 +449,7 @@ int start_accept(event_t *ev, void *arg)
             exit(EXIT_FAILURE);
         }
 
-//        connection_t *conn = //conn in pool
-            http_init_connection(http, fd, peer_addr);
+        http_init_connection(http, fd, peer_addr);
 
         continue;
     }
@@ -472,12 +471,13 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 
 //    recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
+    http->base = base;
     http->listen.fd = conf->listen_fd;
     http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
             start_accept, http, NO_TIMEOUT);
 
     lt_new_memory_pool_manager(&http->listen.buf_pool_manager);
-    lt_new_memory_pool(sizeof(lt_buffer_t), 
+    http->listen.buf_pool = lt_new_memory_pool(sizeof(lt_buffer_t), 
             &http->listen.buf_pool_manager, NULL);
     return http;
 }

@@ -138,7 +138,6 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
         ch = *p;
 
         switch (state) {
-
         /* HTTP methods: GET, HEAD, POST */
         case sw_start:
             r->request_start = p;
