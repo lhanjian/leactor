@@ -5,6 +5,7 @@ static int get_addrinfo_with_bind(http_t *http);
 //static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
 static int http_accept_distributor(event_t *ev, void* http);
 static int http_add_listen(http_t *http, conf_t *conf);
+int http_process_host(request_t *, lt_string_t */*, 28*/);
 /*
 void 
 ignore_sigpipe(void)
@@ -246,74 +247,6 @@ static inline void lowcase_key_copy_from_origin(struct string *low, struct strin
     return ;
 }
 
-int 
-http_process_host(request_t *req, lt_string_t *host/*, int off*/)
-{
-    enum {
-        sw_usual = 0,
-        sw_literal,
-        sw_rest
-    } state;
-
-    state = sw_usual;
-
-    size_t dot_pos = host->length;
-    size_t host_len = host->length;
-
-    char *h = host->data;
-    
-    char ch;
-    for (int i = 0; i < host->length; i++) {
-        ch = h[i];
-        switch(ch) {
-            case '.':
-                if (dot_pos == i - 1) {
-                    return LERROR;
-                }
-                dot_pos = i;
-                break;
-            case ':':
-                if (state == sw_usual) {
-                    host_len = i;
-                    state = sw_rest;
-                }
-                break;
-            case '[':
-                if (i == 0) {
-                    state = sw_literal;
-                }
-                break;
-            case ']':
-                if (state == sw_literal) {
-                    host_len = i + 1;
-                    state = sw_rest;
-                }
-                break;
-            case '\0':
-                return LERROR;
-
-            default:
-                if (ch == '/') {
-                    return LERROR;
-                }
-                break;
-        }
-
-    }
-
-    if (dot_pos == host_len - 1) {
-        host_len--;
-    }
-
-    if (host_len == 0) {
-        return LERROR;
-    }
-
-    host->length  = host_len;
-    return LOK;
-}
-
-
 int http_process_request_headers(connection_t *conn, void *arg)
 {
 //    if (timeout) TODO
@@ -334,7 +267,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             if (req->invalid_header) {
                 continue;
             }
-            struct http_header_element *header_element = 
+            lt_http_header_element_t *header_element = 
                 lt_alloc(req->header_pool, &req->header_pool_manager);
 
             header_element->hash = req->header_hash;//inline can reduce code number
@@ -346,6 +279,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             lowcase_key_copy_from_origin(&header_element->lowcase_key, &header_element->key);
 
             http_process_host(req, &header_element->value/*, 28*/);
+
         }
 
         if (rc == HTTP_PARSE_HEADER_DONE) {
@@ -394,7 +328,6 @@ int http_data_coming(event_t *ev, void *arg)
         buf = conn->buf;
     } else {
     }*/
-
     int rv = lt_recv(conn->fd, buf, DEFAULT_HEADER_BUFFER_SIZE);
     if (rv == LAGAIN) {
 //        set_http_data_coming_timer();
@@ -452,7 +385,6 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 int start_accept(event_t *ev, void *arg)
 {
     http_t *http = (http_t *)arg;
-    printf("coming\n");
     for (int i = 0; i < SOMAXCONN; i++) {//TODO
         struct sockaddr peer_addr;
         int fd = lt_accept(http->listen.fd, &peer_addr);// maybe 512

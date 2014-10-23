@@ -44,11 +44,11 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
         return NULL;
     }
 
+    buf->end = buf->start + DEFAULT_BUF_SIZE;
     buf->pos = buf->start;
-    buf->last = buf->end;
-    buf->end = buf->last + DEFAULT_BUF_SIZE;
-    buf->next = buf;
+    buf->last = buf->start;
 
+    buf->next = buf;
     buf->head = 0;
     buf->written = 0;
 
@@ -114,7 +114,7 @@ lt_recv(int fd, lt_buffer_t *lt_buf, size_t size)
     if (n == 0) {
             return LCLOSE;
     } else if (n > 0) {
-        lt_buf->pos += n;
+        lt_buf->last += n;
         return n;
     } else if (n == -1) {
         int errsv = errno;
