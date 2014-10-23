@@ -106,11 +106,9 @@ typedef struct connection {
     struct sockaddr peer_addr;
     char *peer_port;
 
-    func_t callback;
-    void *conn_callback_arg;
+    int (*handler)(struct connection *, void *);
+    void *handler_arg;
 
-    func_t close_callback;
-    void *conn_callback_close_arg;
 
     struct event *ev;
 
@@ -119,8 +117,6 @@ typedef struct connection {
     struct request *request_list;
 
     lt_buffer_t *buf;
-
-    func_t conn_handler;
 
     int status;
 
@@ -132,6 +128,7 @@ typedef struct connection {
     //body_size
     //state
 } connection_t;
+typedef int (*conn_cb_t)(struct connection *, void *);
 
 typedef struct listening {
     int fd;

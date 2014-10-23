@@ -314,7 +314,7 @@ http_process_host(request_t *req, lt_string_t *host/*, int off*/)
 }
 
 
-int http_process_request_headers(event_t *ev, void *arg)
+int http_process_request_headers(connection_t *conn, void *arg)
 {
 //    if (timeout) TODO
     request_t *req = (request_t *)arg;
@@ -358,7 +358,7 @@ int http_process_request_headers(event_t *ev, void *arg)
     return 0;
 }
 
-int http_process_request_line(event_t *event, void *arg)
+int http_process_request_line(connection_t *conn, void *arg)
 {
     request_t *req = (request_t *)arg;
 
@@ -367,10 +367,14 @@ int http_process_request_line(event_t *event, void *arg)
 
     if (rv == LOK) {
         http_request_line_parsed(req, rv);
-        //event->callback = 0
-
+/*
         event->callback = http_process_request_headers;
-        http_process_request_headers(event, req);
+        event->arg = req;
+*/
+        conn->handler = http_process_request_headers;
+        conn->handler_arg = req;//state changed
+
+        http_process_request_headers(conn, req);
     }
 
     return 0;
@@ -403,9 +407,20 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting 
     }
 
-    request_t *req = http_create_request(conn);
-    conn->ev->callback = http_process_request_line;
-    http_process_request_line(conn->ev, req);
+    if (!conn->status) { //New connection
+        request_t *req = http_create_request(conn);
+        http_process_request_line(conn, req);
+
+        conn->handler = http_process_request_line;
+        conn->handler_arg = req;
+        return 0;
+    } else {
+        conn->handler(conn, conn->handler_arg);
+    }
+//    ev->callback = http_process_request_line;
+//    ev->arg = req;
+//    状态处理
+
 
     return 0;
 }
@@ -428,7 +443,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
             &conn->request_pool_manager, NULL);
 
-    conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN|LV_LAG, 
+    conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
             http_data_coming, conn, INF);
     //add_timer
     return conn;
