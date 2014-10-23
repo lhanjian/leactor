@@ -52,7 +52,6 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     buf->head = 0;
     buf->written = 0;
 
-
     return buf;
 }
 

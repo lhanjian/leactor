@@ -420,7 +420,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
 
     conn->buf = lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, 
-            DEFAULT_HEADER_BUFFER_SIZE + sizeof(lt_buffer_t));
+            DEFAULT_HEADER_BUFFER_SIZE);
 
     conn->status = 0;
 
