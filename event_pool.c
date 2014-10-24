@@ -114,7 +114,6 @@ lt_free(lt_memory_pool_t *pool, void *object_contents)
     ((lt_memory_piece_t *)object_pos)->next = old_next;
 }
 
-
 void lt_destroy_memory_pool(lt_memory_pool_t *pool, 
         lt_memory_pool_t *manager)
 {

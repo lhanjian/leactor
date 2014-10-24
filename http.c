@@ -5,7 +5,7 @@ static int get_addrinfo_with_bind(http_t *http);
 //static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
 static int http_accept_distributor(event_t *ev, void* http);
 static int http_add_listen(http_t *http, conf_t *conf);
-int http_process_host(request_t *, lt_string_t */*, 28*/);
+int http_process_host(request_t *, lt_string_t * /*, 28*/);
 /*
 void 
 ignore_sigpipe(void)
@@ -353,7 +353,6 @@ int http_data_coming(event_t *ev, void *arg)
 //    ev->callback = http_process_request_line;
 //    ev->arg = req;
 //    状态处理
-
 
     return 0;
 }
