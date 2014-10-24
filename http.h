@@ -104,11 +104,11 @@ typedef struct request {
 typedef struct connection {
     int fd;
     struct sockaddr peer_addr;
+    char *peer_addr_c;
     char *peer_port;
 
     int (*handler)(struct connection *, void *);
     void *handler_arg;
-
 
     struct event *ev;
 
@@ -123,10 +123,6 @@ typedef struct connection {
     struct connection *next;
     int timeout;
     int close;
-    //buffer
-    //header_size
-    //body_size
-    //state
 } connection_t;
 typedef int (*conn_cb_t)(struct connection *, void *);
 
@@ -168,3 +164,11 @@ typedef struct http_header_element {
     struct string lowcase_key;
 } lt_http_header_element_t;
 
+typedef struct proxy {
+    base_t *base;
+    connection_t conn[4];//TEMP TODO
+} proxy_t;
+
+proxy_t *proxy_worker_new(base_t *, conf_t *);
+int proxy_connect_backend(proxy_t *, conf_t *);
+int proxy_connect(connection_t *, conf_t *);

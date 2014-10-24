@@ -60,7 +60,13 @@ int child(conf_t *conf)
     }
     http_t *child = http_worker_new(base, conf);
     if (child == NULL) {
-        fprintf(stderr, "child's http_t fail to create\n");
+        fprintf(stderr, "fail to create http object.\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    proxy_t *proxy = proxy_worker_new(base, conf);
+    if (proxy == NULL) {
+        fprintf(stderr, "fail to create proxy object.\n");
         exit(EXIT_FAILURE);
     }
 

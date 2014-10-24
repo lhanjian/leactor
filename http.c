@@ -142,8 +142,6 @@ int http_add_listen(http_t *http, conf_t *conf)
 
     conf->listen_fd = http->listen.fd;
 
-//    send_listenfd_to_child(conf->pfd, http->listen.fd);
-
     rv = listen(http->listen.fd, SOMAXCONN);
     if (rv) {
         fprintf(stderr, "listen error");
