@@ -14,7 +14,7 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 
     ev.events = 0;
     if (flag & LV_FDRD)
-        ev.events |= EPOLLIN;
+        ev.events |= EPOLLIN|EPOLLRDHUP;
     if (flag & LV_FDWR)
         ev.events |= EPOLLOUT;
     if (flag & LV_CONN)  
@@ -114,6 +114,7 @@ lt_io_add(base_t *base, int   fd, flag_t flag_set,
     }
     
     lt_add_to_epfd(base->epfd, event, fd, flag_set);
+    event->base = base;
 
     return event;
 }
@@ -192,7 +193,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
                 actlist->head = ev;//lag
                 break;
             } else {
-                ev->callback(ev, ev->arg);//directl
+                ev->callback(ev, ev->arg);//directly callback
             } 
         } else if(ev_array[i].events & EPOLLRDHUP) {
             //TODO
@@ -325,7 +326,7 @@ lt_remove_from_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 void//res_t
 lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist) 
 {
-    lt_free(readylist->event_pool, ev);
+    lt_free(readylist->event_pool, ev);//no order
     readylist->event_len--;
 }
 

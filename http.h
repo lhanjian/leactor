@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 #include <sys/eventfd.h>
 
 #define DEFAULT_HEADER_BUFFER_SIZE (16384)
@@ -42,6 +43,7 @@ typedef struct conf {
     int efd_distributor;
 //    int pfd[2];
     int listen_fd;
+    base_t *base;
 } conf_t;
 
 struct upstream {
@@ -104,6 +106,7 @@ typedef struct request {
 typedef struct connection {
     int fd;
     struct sockaddr peer_addr;
+    struct sockaddr_in peer_addr_in;
     char *peer_addr_c;
     char *peer_port;
 
@@ -124,6 +127,7 @@ typedef struct connection {
     int timeout;
     int close;
 } connection_t;
+
 typedef int (*conn_cb_t)(struct connection *, void *);
 
 typedef struct listening {

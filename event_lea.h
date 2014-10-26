@@ -100,6 +100,7 @@ typedef struct event {
     int           deleted;
     int           pos_in_ready;
     struct event *next_active_ev;
+    struct base  *base;
 //    int     epfd;
 } event_t;
 
