@@ -345,7 +345,7 @@ int http_data_coming(event_t *ev, void *arg)
         conn->handler = http_process_request_line;
         conn->handler_arg = req;
         return 0;
-    } else {
+    } else {//state machine???
         conn->handler(conn, conn->handler_arg);
     }
 //    ev->callback = http_process_request_line;
