@@ -61,6 +61,8 @@ int http_process_host(request_t *req, lt_string_t *host/*, int off*/)
         return LERROR;
     }
 
+    lowcase_key_copy_from_origin(host, host);
+
     host->length  = host_len;
     return LOK;
 }

@@ -20,6 +20,10 @@ ignore_sigpipe(void)
 }
 */
 
+int http_validation_host(request_t *req)
+{
+    return LOK;
+}
 http_t *http_master_new(base_t *base, conf_t *conf)
 {
     http_t *http = calloc(1, sizeof(http_t));
@@ -235,7 +239,7 @@ int http_request_line_parsed(request_t *req, int rv)
     return 0;
 }
 
-static inline void lowcase_key_copy_from_origin(struct string *low, struct string *origin)
+void lowcase_key_copy_from_origin(struct string *low, struct string *origin)
 {
     low->data = origin->data;
     low->length = origin->length;
@@ -284,7 +288,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             req->request_length += req->header_in->pos - req->header_name_start;
 //            req->http_state = HTTP_PROCE
 //            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
-
+//            http_validation_host(req);
         }
     }
     return 0;
