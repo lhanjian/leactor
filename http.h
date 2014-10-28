@@ -167,6 +167,7 @@ typedef struct http_header_element {
     struct string value;
     struct string lowcase_key;
 } lt_http_header_element_t;
+
 void lowcase_key_copy_from_origin(struct string *, struct string *);
 typedef struct proxy {
     base_t *base;

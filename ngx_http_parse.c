@@ -819,7 +819,6 @@ done:
     return LOK;
 }
 
-
 int
 ngx_http_parse_header_line(request_t *r, lt_buffer_t *b,
     int allow_underscores)
