@@ -19,6 +19,7 @@
 typedef struct string {
     int length;
     char *data;
+    unsigned hash;
 } lt_string_t;
 
 typedef struct hash {
@@ -154,6 +155,7 @@ typedef struct http {
     struct listening listen;
     int core_amount;
     int efd;
+
 } http_t;
 
 void ignore_sigpipe(void);

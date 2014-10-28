@@ -22,6 +22,16 @@ ignore_sigpipe(void)
     }
 }
 */
+unsigned int HostHash;
+unsigned int BKDRhash(char *str, int length)
+{
+    unsigned hash = 0;
+    for (int i = 0; i < length; i++) {
+        char ch = str[i];
+        hash = hash * 31 + ch;
+    }
+    return hash;
+}
 
 int http_validation_host(request_t *req)
 {
@@ -163,7 +173,7 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
     close(pfd[1]);
     read(pfd[0], fd, sizeof(int));
     close(pfd[0]);
-}
+}兩岸交流二版兩岸交流二版
 */
 
 int set_http_data_coming_timeout();
@@ -178,7 +188,7 @@ request_t *http_create_request(connection_t *conn)
 
     lt_new_memory_pool_manager(&req->header_pool_manager);
     req->header_pool = lt_new_memory_pool(sizeof(lt_http_header_element_t), 
-                                                 &req->header_pool_manager, NULL);
+                                              兩岸交流二版   &req->header_pool_manager, NULL);
     return req;
 }
 /*
@@ -252,6 +262,22 @@ void lowcase_key_copy_from_origin(struct string *low, struct string *origin)
     return ;
 }
 
+int http_process_element(request_t *req, lt_http_header_element_t *element)
+{            
+    int field = -1;
+    enum {
+        fl_host = 0
+    };
+
+//    int state;
+    
+    unsigned hash = BKDRhash(element->lowcase_key.data, element->lowcase_key.length);
+    if (hash == HostHash) {
+        http_process_host(req, &element->value/*, 28*/);
+    }
+    //TODO hash == othersXXX
+    return 0;
+}
 int http_process_request_headers(connection_t *conn, void *arg)
 {
 //    if (timeout) TODO
@@ -283,7 +309,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             
             lowcase_key_copy_from_origin(&header_element->lowcase_key, &header_element->key);
 
-            http_process_host(req, &header_element->value/*, 28*/);
+//            http_process_host(req, &header_element->value/*, 28*/);
 
         }
 
@@ -423,6 +449,8 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
                                     &http->listen.connection_pool_manager, NULL);
 
 //    recv_listenfd_to_child(conf->pfd, &http->listen.fd);
+
+    HostHash = BKDRhash("Host", sizeof("Host"));
 
     http->base = base;
     http->listen.fd = conf->listen_fd;
