@@ -1,3 +1,6 @@
+#define DEBUG (1)
+
+
 #include "http.h"
 #include "ngx_http_parse.h"
 static int get_addrinfo_with_bind(http_t *http);
@@ -286,9 +289,11 @@ int http_process_request_headers(connection_t *conn, void *arg)
 
         if (rc == HTTP_PARSE_HEADER_DONE) {
             req->request_length += req->header_in->pos - req->header_name_start;
+            debug_print("%s", "DONE\n");
 //            req->http_state = HTTP_PROCE
 //            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
 //            http_validation_host(req);
+            return 0;
         }
     }
     return 0;

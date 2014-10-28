@@ -816,7 +816,7 @@ done:
         return NGX_HTTP_PARSE_INVALID_09_METHOD;
     }
 
-    return 0;
+    return LOK;
 }
 
 
@@ -1078,7 +1078,7 @@ done:
     r->header_hash = hash;
     r->lowcase_index = i;
 
-    return 0;
+    return LOK;
 
 header_done:
 

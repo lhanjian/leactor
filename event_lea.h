@@ -17,6 +17,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+
+#define debug_print(fmt, ...) \
+    do {if (DEBUG) \
+            fprintf(stderr, fmt, __VA_ARGS__); \
+    }  while(0)
+
+
 #define MAX_ACTIVE
 #define MAX_READY
 #define DEFAULT_BUF_SIZE (16384)
