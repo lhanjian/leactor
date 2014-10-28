@@ -9,19 +9,7 @@ static int get_addrinfo_with_bind(http_t *http);
 static int http_accept_distributor(event_t *ev, void* http);
 static int http_add_listen(http_t *http, conf_t *conf);
 int http_process_host(request_t *, lt_string_t * /*, 28*/);
-/*
-void 
-ignore_sigpipe(void)
-{
-    struct sigaction act;
-    memset(&act, 0, sizeof act);
-    act.sa_handler = SIG_IGN;
-    act.sa_flags = SA_RESTART;
-    if(sigaction(SIGPIPE, &act, NULL)) {
-        perror("sigaction");
-    }
-}
-*/
+
 unsigned int HostHash;
 unsigned int BKDRhash(char *str, int length)
 {
@@ -33,10 +21,11 @@ unsigned int BKDRhash(char *str, int length)
     return hash;
 }
 
-int http_validation_host(request_t *req)
+int http_find_host(request_t *req)
 {
     return LOK;
 }
+
 http_t *http_master_new(base_t *base, conf_t *conf)
 {
     http_t *http = calloc(1, sizeof(http_t));
@@ -188,7 +177,7 @@ request_t *http_create_request(connection_t *conn)
 
     lt_new_memory_pool_manager(&req->header_pool_manager);
     req->header_pool = lt_new_memory_pool(sizeof(lt_http_header_element_t), 
-                                              兩岸交流二版   &req->header_pool_manager, NULL);
+                                              &req->header_pool_manager, NULL);
     return req;
 }
 /*
@@ -269,15 +258,17 @@ int http_process_element(request_t *req, lt_http_header_element_t *element)
         fl_host = 0
     };
 
-//    int state;
-    
     unsigned hash = BKDRhash(element->lowcase_key.data, element->lowcase_key.length);
     if (hash == HostHash) {
         http_process_host(req, &element->value/*, 28*/);
+        if (http_find_host(req)) {
+            return LERROR;
+        }
     }
     //TODO hash == othersXXX
-    return 0;
+    return LOK;
 }
+
 int http_process_request_headers(connection_t *conn, void *arg)
 {
 //    if (timeout) TODO
@@ -301,6 +292,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             lt_http_header_element_t *header_element = 
                 lt_alloc(req->header_pool, &req->header_pool_manager);
 
+            //MUST BE COMPLETED
             header_element->hash = req->header_hash;//inline can reduce code number
             lt_string_assign_new(&header_element->key, 
                     req->header_name_end - req->header_name_start, req->header_name_start);
@@ -309,13 +301,17 @@ int http_process_request_headers(connection_t *conn, void *arg)
             
             lowcase_key_copy_from_origin(&header_element->lowcase_key, &header_element->key);
 
-//            http_process_host(req, &header_element->value/*, 28*/);
+            if (http_process_element(req, header_element) == LERROR) {
+                //close connection
+            }
 
         }
 
+        //MUST BE COMPLETED
         if (rc == HTTP_PARSE_HEADER_DONE) {
             req->request_length += req->header_in->pos - req->header_name_start;
             debug_print("%s", "DONE\n");
+            proxy_send_to_upstream(req);
 //            req->http_state = HTTP_PROCE
 //            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
 //            http_validation_host(req);

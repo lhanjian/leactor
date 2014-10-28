@@ -49,6 +49,7 @@ typedef struct conf {
 
 struct upstream {
 } upstream_t;
+
 typedef struct request {
     lt_buffer_t *header_in;
     int state;
@@ -179,3 +180,4 @@ typedef struct proxy {
 proxy_t *proxy_worker_new(base_t *, conf_t *);
 int proxy_connect_backend(proxy_t *, conf_t *);
 int proxy_connect(connection_t *, conf_t *);
+int proxy_send_to_upstream(request_t *req);

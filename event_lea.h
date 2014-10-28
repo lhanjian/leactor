@@ -198,6 +198,7 @@ res_t base_free(base_t *base_rlve);
 
 ssize_t lt_recv(int, lt_buffer_t *, size_t);
 int lt_accept(int, struct sockaddr *sockaddr);
+ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *buf);
 
 struct lt_string {
     int len;
