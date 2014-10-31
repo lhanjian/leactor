@@ -298,6 +298,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
                     req->header_name_end - req->header_name_start, req->header_name_start);
             lt_string_assign_new(&header_element->value, 
                     req->header_end - req->header_start, req->header_start);
+            //TODO:chain
             
             lowcase_key_copy_from_origin(&header_element->lowcase_key, &header_element->key);
 
@@ -330,10 +331,8 @@ int http_process_request_line(connection_t *conn, void *arg)
 
     if (rv == LOK) {
         http_request_line_parsed(req, rv);
-/*
-        event->callback = http_process_request_headers;
-        event->arg = req;
-*/
+/*      event->callback = http_process_request_headers;
+        event->arg = req; */
         conn->handler = http_process_request_headers;
         conn->handler_arg = req;//state changed
 

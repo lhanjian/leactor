@@ -55,29 +55,33 @@ typedef struct request {
     lt_buffer_t *header_in;
     int state;
 
-    char *request_start;
-    char *request_end;
+    char *request_start;//line start
+    char *request_end;//line end
+
+    struct string method_name;
+    char *method_end;
+    int method;
 
     char *uri_start;
     char *uri_end;
     char *uri_ext;
-
-    char *host_start;
-    char *host_end;
+    char *port_end;
 
     char *schema_start;
     char *schema_end;
 
+    char *host_start;
+    char *host_end;
+
+
     char *args_start;
 
 
-    char *port_end;
 
-    char *header_name_start;
-    char *header_name_end;
-
-    char *header_start;
-    char *header_end;
+    char *header_start; //one header field start
+    char *header_name_start;// one header field name start
+    char *header_name_end;//one header field name end
+    char *header_end; //one header field end
 
     int header_hash;
     int lowcase_index;
@@ -87,7 +91,6 @@ typedef struct request {
     int plus_in_uri;
     int space_in_uri;
     int http_version;
-
     int http_major;
     int http_minor;
 
@@ -98,9 +101,6 @@ typedef struct request {
     struct string request_line;
     int request_length;
 
-    struct string method_name;
-    char *method_end;
-    int method;
 
     struct string http_protocol;
     char *http_protocol_end;
