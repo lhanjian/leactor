@@ -15,6 +15,7 @@
 #include <sys/eventfd.h>
 
 #define DEFAULT_HEADER_BUFFER_SIZE (16384)
+#define DEFAULT_UPSTREAM_BUFFER_SIZE (16384)
 #define HTTP_PARSE_HEADER_DONE 1
 typedef struct string {
     int length;
@@ -53,19 +54,28 @@ struct upstream {
 typedef struct request {
     lt_buffer_t *header_in;
     int state;
+
     char *request_start;
     char *request_end;
+
     char *uri_start;
-    char *host_start;
-    char *schema_start;
-    char *args_start;
-    char *schema_end;
     char *uri_end;
     char *uri_ext;
+
+    char *host_start;
     char *host_end;
+
+    char *schema_start;
+    char *schema_end;
+
+    char *args_start;
+
+
     char *port_end;
+
     char *header_name_start;
     char *header_name_end;
+
     char *header_start;
     char *header_end;
 
@@ -122,6 +132,7 @@ typedef struct connection {
     struct request *request_list;
 
     lt_buffer_t *buf;
+    struct lt_memory_pool *buf_pool_manager;
 
     int status;
 
@@ -146,8 +157,8 @@ typedef struct listening {
     struct connection *downstream_list;;
     struct event *ev;
 
-        struct lt_memory_pool *buf_pool;
-        struct lt_memory_pool buf_pool_manager;
+    struct lt_memory_pool *buf_pool;
+    struct lt_memory_pool buf_pool_manager;
 } listening_t;
 
 typedef struct http {
@@ -175,6 +186,8 @@ void lowcase_key_copy_from_origin(struct string *, struct string *);
 typedef struct proxy {
     base_t *base;
     connection_t conn[4];//TEMP TODO
+    struct lt_memory_pool *buf_pool;
+    struct lt_memory_pool buf_pool_manager;
 } proxy_t;
 
 proxy_t *proxy_worker_new(base_t *, conf_t *);

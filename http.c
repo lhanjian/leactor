@@ -162,7 +162,7 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
     close(pfd[1]);
     read(pfd[0], fd, sizeof(int));
     close(pfd[0]);
-}兩岸交流二版兩岸交流二版
+}
 */
 
 int set_http_data_coming_timeout();
@@ -352,17 +352,18 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting
     }
 
-    lt_buffer_t *buf = conn->buf?conn->buf:NULL;
+    lt_buffer_t *buf = conn->buf;//?conn->buf:NULL;
 /*    if (conn->buf) {
         buf = conn->buf;
     } else {
     }*/
-    int rv = lt_recv(conn->fd, buf, DEFAULT_HEADER_BUFFER_SIZE);
+    int rv = lt_recv(conn->fd, buf);
     if (rv == LAGAIN) {
 //        set_http_data_coming_timer();
 //        conn->status = EFAULT;
         //push back lt_buffer to pool
-        return 0;
+//        return 0;
+//
     } else if (rv == LCLOSE) {
         //http_close_connecting
     } else if (rv == LERROR) {
@@ -382,7 +383,6 @@ int http_data_coming(event_t *ev, void *arg)
 //    ev->callback = http_process_request_line;
 //    ev->arg = req;
 //    状态处理
-
     return 0;
 }
 
@@ -395,9 +395,10 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
 
-    conn->buf = lt_new_buffer_chain(http->listen.buf_pool, &http->listen.buf_pool_manager, 
-            DEFAULT_HEADER_BUFFER_SIZE);
+    conn->buf = lt_new_buffer_chain(http->listen.buf_pool, 
+            &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
 
+    conn->buf_pool_manager = &http->listen.buf_pool_manager;
     conn->status = 0;
 
     lt_new_memory_pool_manager(&conn->request_pool_manager);
@@ -443,8 +444,6 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 
     http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
                                     &http->listen.connection_pool_manager, NULL);
-
-//    recv_listenfd_to_child(conf->pfd, &http->listen.fd);
 
     HostHash = BKDRhash("Host", sizeof("Host"));
 

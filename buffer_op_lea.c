@@ -30,7 +30,7 @@ lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
             old_buf->next = new_buf;
             old_buf = new_buf;
         }
-        new_buf->next = old_buf;
+        new_buf->next = buf;//circular_list
     }
 
     return buf;
@@ -48,6 +48,7 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     buf->pos = buf->start;
     buf->last = buf->start;
 
+    buf->pool = pool;
     buf->next = buf;
     buf->head = 0;
     buf->written = 0;
@@ -57,17 +58,18 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
 
 ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
 {
-    size_t length;
+    size_t length = 0;
+
+    lt_buffer_t *header_buf = out_buf; 
+    lt_buffer_t *buf = out_buf; 
 
     int n = 1;
-    
-    for (lt_buffer_t *buf = out_buf; 
-            buf != buf->next && buf->next != out_buf; 
-            n++, buf = buf->next) { }
+
+    for (; buf->next != buf; n++, buf = buf->next) { }
 
     struct iovec out_vector[n];
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++, out_buf = out_buf->next) {
         out_vector[i].iov_base = out_buf->pos;
         out_vector[i].iov_len = out_buf->last - out_buf->pos;
         length += out_vector[i].iov_len;
@@ -78,55 +80,74 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
         ssize_t written_count = rv / DEFAULT_BUF_SIZE;
         ssize_t written_offset = rv % DEFAULT_BUF_SIZE;
         ssize_t remain = length - rv;
-        int i;
-        for (i = 0; i < written_count; i++) {
-            ((lt_buffer_t *)out_vector[i].iov_base)->written = 1;
-        }
-        ((lt_buffer_t *)out_vector[i].iov_base)->pos += written_offset;
-        
-//        pospone_send_buffer_chains_loop(fd, out_buf);
 
-        return remain;
+        lt_buffer_t *written_buf = header_buf;
+        for (int i = 0; i < written_count; i++, written_buf = written_buf->next) {
+            written_buf->pos += DEFAULT_BUF_SIZE;
+        }
+        written_buf->pos += written_offset;
+//        pospone_send_buffer_chains_loop(fd, out_buf);
+        return LAGAIN;
+        //remain;
         //Double Choice
         //A, keep it loop in event_list to send
         //B, Watch writable event and send
     } else if (rv == -1) {
         int errsv = errno;
         switch (errsv) {
-            case EAGAIN: return LEAGAIN;
-            case EINTR:  return LEINTR;
+            case EAGAIN: return LAGAIN;
+            case EINTR:  return LABORT;
             default: break;//TODO
         }
 
     } else if (!rv) {
         fprintf(stderr, "writev returned zero\n");
-        return LEZERO;
+        return LCLOSE;
+    } else /*ALL SUCCESS*/ {
+        return LOK;
     }
 
     return n;
 }
 
 ssize_t
-lt_recv(int fd, lt_buffer_t *lt_buf, size_t size)
+lt_recv(int fd, lt_buffer_t *lt_buf)
 {
-    ssize_t n = recv(fd, lt_buf->pos, lt_buf->end - lt_buf->pos, 0/*recv TWICE*/);
+    for (;;) {
+        ssize_t length = lt_buf->end - lt_buf->last;
+        ssize_t recv_len = 0;
+        ssize_t n = recv(fd, lt_buf->last, length, 0/*TODO: recv TWICE*/);
 
-    if (n == 0) {
+        if (n == 0) {
             return LCLOSE;
-    } else if (n > 0) {
-        lt_buf->last += n;
-        return n;
-    } else if (n == -1) {
-        int errsv = errno;
-        if (errsv == EAGAIN) {
-            return LAGAIN;
-        } else {
-            perror("recv");
-            return LERROR;
-        }
-    } else { }
+        } else if (n > 0) {
+            lt_buf->last += n;
+            recv_len += n;
+            if (n < length) {
+                continue;
+            }
+            if (n == length) { 
+                lt_buffer_t *new_buf = lt_alloc(new_buf->pool, new_buf->pool->manager);
+                lt_buf->next = new_buf;
+                lt_buf = new_buf;
+                continue;
+            }
+        } else if (n == -1) {
+            int errsv = errno;
+            if (errsv == EAGAIN) {
+                if (recv_len > 0) {
+                    return recv_len;
+                } else if (recv_len == 0) {
+                    return LAGAIN;
+                }
+            } else {
+                perror("recv:");
+                return LERROR;
+            }
+        } else { }
+    }
 
-    return n;
+    return 0;
 }
 
 int 

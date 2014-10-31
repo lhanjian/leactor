@@ -43,6 +43,7 @@ lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager, lt_memory_po
     }
 
     new->next = manager->next;
+    new->manager = manager;
 
     return new;
 }

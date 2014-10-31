@@ -41,9 +41,6 @@
 #define DEFAULT_MMAP_THRESHOLD_MAX (4*1024*1024)
 #define UNDELETED (0)
 
-#define LEZERO  (-2)
-#define LEAGAIN (-3)
-#define LEINTR  (-4)
 typedef struct lt_buffer {
     char start[DEFAULT_BUF_SIZE];
     char *pos;
@@ -52,6 +49,7 @@ typedef struct lt_buffer {
     int head;
     int written;
     struct lt_buffer *next;
+    struct lt_memory_pool *pool;
 } lt_buffer_t;
 //#define 
 //static funtion didn't dispatch return value;
@@ -187,6 +185,10 @@ res_t base_dispatch(base_t *base_dispatch
 /*
 res_t base_free(base_t *base_rlve);
 */
+#define LEZERO  (-2)
+#define LEAGAIN (-3)
+#define LEINTR  (-4)
+
 #define LABORT (-6)
 #define LCLOSE (-5)
 #define LAPART (-4)
@@ -196,7 +198,9 @@ res_t base_free(base_t *base_rlve);
 #define L_INVALID_METHOD (-7)
 
 
-ssize_t lt_recv(int, lt_buffer_t *, size_t);
+ssize_t lt_recv(int, lt_buffer_t *);
+        ///*, lt_memory_manager_t *);
+//, size_t);
 int lt_accept(int, struct sockaddr *sockaddr);
 ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *buf);
 
