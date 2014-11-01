@@ -51,6 +51,12 @@ typedef struct lt_buffer {
     struct lt_buffer *next;
     struct lt_memory_pool *pool;
 } lt_buffer_t;
+
+typedef struct lt_chain {
+//    struct lt_buffer *buf;
+    struct iovec buf;
+    struct lt_chain *next;
+} lt_chain_t;
 //#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
@@ -203,6 +209,7 @@ ssize_t lt_recv(int, lt_buffer_t *);
 //, size_t);
 int lt_accept(int, struct sockaddr *sockaddr);
 ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *buf);
+lt_chain_t *send_chains(int fd, lt_chain_t *buf);
 
 struct lt_string {
     int len;

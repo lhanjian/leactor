@@ -265,6 +265,15 @@ int http_process_element(request_t *req, lt_http_header_element_t *element)
             return LERROR;
         }
     }
+
+    if (req->element_head == NULL) {
+        req->element_head = element;
+        req->element_tail = element;
+    } else {
+        req->element_tail->next = element;
+        req->element_tail = element;
+    }
+    element->next = NULL;
     //TODO hash == othersXXX
     return LOK;
 }
@@ -312,7 +321,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
         if (rc == HTTP_PARSE_HEADER_DONE) {
             req->request_length += req->header_in->pos - req->header_name_start;
             debug_print("%s", "DONE\n");
-            proxy_send_to_upstream(req);
+            proxy_send_to_upstream(conn, req);
 //            req->http_state = HTTP_PROCE
 //            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
 //            http_validation_host(req);

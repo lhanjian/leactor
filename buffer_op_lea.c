@@ -56,6 +56,104 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     return buf;
 }
 
+lt_chain_t *send_chains(int fd, lt_chain_t *out_chain)
+{
+    int chain_len = 0;
+    lt_chain_t *rv_chain;
+
+    for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
+        chain_len++;
+    }
+
+    struct iovec out_vec[chain_len];
+
+    ssize_t rv = writev(fd, out_vec, chain_len);
+    for (lt_chain_t *cur = out_chain; cur; cur = cur->next) {
+        int iov_len = cur->buf.iov_len;
+        if (rv > iov_len) {
+            cur->buf.iov_len -= iov_len;
+            rv -= iov_len;
+            //lt_free?
+        } else {
+            cur->buf.iov_base  = (char *)cur->buf.iov_base + iov_len;
+            cur->buf.iov_len -= rv;
+            rv_chain = cur;
+            if (rv == iov_len) {
+                continue;
+            } else /*if(rv < iov_len)*/ {
+                return rv_chain;
+            }
+        }
+    }
+
+    return NULL;//all complete;
+    
+}
+
+/*
+int send_chains(int fd, lt_chain_t *out_chain)
+{
+    lt_chain_t *chain = out_chain;
+    lt_chain_t *old_chain;
+    lt_buffer_t *buf = out_chain->buf;
+
+    int iov_i = 1;
+
+    for (; chain; chain = chain->next) {
+        for (; buf->next != buf; iov_i++, buf = buf->next) { };
+        old_chain = chain;
+    }
+    lt_chain_t *tail_chain = old_chain;
+
+    struct iovec out_vector[iov_i];
+
+    lt_chain_t *cur_chain = out_chain;
+    for (int i = 0; cur_chain; cur_chain = cur_chain->next) {
+        lt_buffer_t *cur_buf = cur_chain->buf;
+
+        while (1) {
+            out_vector[i].iov_base = buf;
+            out_vector[i].iov_len = buf->last - buf->pos;
+
+            if (buf->next == buf) break; 
+            else { i++;  buf = buf->next; }
+        }
+    }
+
+    ssize_t n = writev(fd, out_vector, iov_i);
+    if (n == -1) {
+        int errsv = errno;
+        switch(errsv) {
+            case EAGAIN:break;
+            default:return LERROR;
+        }
+    } else if (n > 0) {
+        int remain = n;
+        lt_buffer_t *cur_buf;
+        int iov_len;
+
+        for (int i = 0; i < iov_i; i++) {
+            iov_len = out_vector[i].iov_len
+            if (remain > iov_len) {
+                cur_buf = out_vector[i].iov_base;
+                cur_buf->pos += iov_len;
+                remain -= iov_len;
+                cur_buf = cur_buf->next;
+            } else if (remain < iov_len){
+                cur_buf->pos += remain;
+                //post writev
+                break;
+            } else {
+                //complete
+            }
+        }
+    }
+
+
+    return 0;
+}
+*/
+/*
 ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
 {
     size_t length = 0;
@@ -103,12 +201,13 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
     } else if (!rv) {
         fprintf(stderr, "writev returned zero\n");
         return LCLOSE;
-    } else /*ALL SUCCESS*/ {
+    } else {
         return LOK;
     }
 
     return n;
 }
+*/
 
 ssize_t
 lt_recv(int fd, lt_buffer_t *lt_buf)

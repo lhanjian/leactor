@@ -52,63 +52,57 @@ struct upstream {
 } upstream_t;
 
 typedef struct request {
-    lt_buffer_t *header_in;
+    lt_buffer_t *header_in;//parse pos
     int state;
 
-    char *request_start;//line start
-    char *request_end;//line end
 
+//request_line part
     struct string method_name;
     char *method_end;
     int method;
-
+    struct string http_protocol;
+    char *http_protocol_end;
+    struct string uri;
+    struct string unparsed_uri;
+    int valid_unparsed_uri;
     char *uri_start;
     char *uri_end;
     char *uri_ext;
     char *port_end;
-
+    char *host_start;
+    char *host_end;
+    char *args_start;
     char *schema_start;
     char *schema_end;
 
-    char *host_start;
-    char *host_end;
-
-
-    char *args_start;
-
-
-
-    char *header_start; //one header field start
-    char *header_name_start;// one header field name start
-    char *header_name_end;//one header field name end
-    char *header_end; //one header field end
-
-    int header_hash;
-    int lowcase_index;
-    int invalid_header; 
+    int http_version;
     int complex_uri;
     int quoted_uri;
     int plus_in_uri;
     int space_in_uri;
-    int http_version;
+//request_line
+    struct string request_line;
+    int request_length;
+    char *request_start;//request line start
+    char *request_end;//request line end
+//request_header
+    char *header_start; //one header field start
+    char *header_end; //one header field end
+//request_header_field
+    char *header_name_start;// one header field name start
+    char *header_name_end;//one header field name end
+    struct http_header_element *element_head;
+    struct http_header_element *element_tail;
+//request_header_part
+    int header_hash;
+    int lowcase_index;
+    int invalid_header; 
     int http_major;
     int http_minor;
 
     char lowcase_header[32];
 
     struct upstream *upstream;
-
-    struct string request_line;
-    int request_length;
-
-
-    struct string http_protocol;
-    char *http_protocol_end;
-    
-    struct string uri;
-    struct string unparsed_uri;
-
-    int valid_unparsed_uri;
 
     struct lt_memory_pool *header_pool;
     struct lt_memory_pool  header_pool_manager;
@@ -180,6 +174,7 @@ typedef struct http_header_element {
     struct string key;
     struct string value;
     struct string lowcase_key;
+    struct http_header_element *next;
 } lt_http_header_element_t;
 
 void lowcase_key_copy_from_origin(struct string *, struct string *);
@@ -193,4 +188,4 @@ typedef struct proxy {
 proxy_t *proxy_worker_new(base_t *, conf_t *);
 int proxy_connect_backend(proxy_t *, conf_t *);
 int proxy_connect(connection_t *, conf_t *);
-int proxy_send_to_upstream(request_t *req);
+int proxy_send_to_upstream(connection_t *conn, request_t *req);
