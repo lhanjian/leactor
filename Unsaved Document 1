@@ -1,0 +1,74 @@
+event_accept
+  handler->
+    http_init_connection
+http_wait_request_handler
+        http_process_request_line
+            http_read_request_header
+                
+                recv
+                timer
+            
+        http_process_request_line
+            http_parse_request_line
+                0x20
+  handler->
+    keepalive_handler
+        紧接　ngx_http_process_request_line
+
+handler->
+http_wait_request_handler
+
+
+http_process_request_headers
+                process_request_headers
+:OK?                process_host
+                    process_connection
+                    process_user_agent 
+                    process_header_line
+                    process_unique_header_line
+                    
+                    
+                ngx_http_process_request
+                    ngx_http_handler
+                        ngx_http_run_posted_requests
+
+
+
+
+upstream_handler
+
+
+
+超时->清除listen->清除conn->清除req->清除buf
+
+
+pool   
+    cycle
+pool
+    event_accept 
+pool
+    ngx_http_create_request
+pool
+    ngx_http_upstream_connect
+
+
+
+
+http_core_content_phase
+    ngx_http_finalize_request(r, r->content_handler(r))
+        ngx_http_proxy_handler
+            ngx_http_upstream_create(r)
+                u->schema = {len = 7, data = 0x95e166e "http://TEST"}
+        
+
+X-Real-IP: 218.75.123.186\r\nX-Forwarded-For
+
+重发时机
+
+
+SO_REUSEPORT
+
+
+request_line
+request_header
+    request_header_field
