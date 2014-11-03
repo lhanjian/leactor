@@ -73,12 +73,14 @@ lt_chain_t *send_chains(int fd, lt_chain_t *out_chain)
         if (rv > iov_len) {
             cur->buf.iov_len -= iov_len;
             rv -= iov_len;
+            continue;
             //lt_free?
         } else {
             cur->buf.iov_base  = (char *)cur->buf.iov_base + iov_len;
             cur->buf.iov_len -= rv;
             rv_chain = cur;
             if (rv == iov_len) {
+                rv -= iov_len;
                 continue;
             } else /*if(rv < iov_len)*/ {
                 return rv_chain;
