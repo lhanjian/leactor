@@ -286,10 +286,31 @@ lt_chain_t *construct_chains(request_t *req)
     chain_request_line->buf.iov_base = req->request_start;
     chain_request_line->buf.iov_len = req->request_length;
 
-    lt_chain_t *chain_request_header = lt_alloc(req->chain_pool, &req->chain_pool_manager);
-    chain_request_header->buf.iov_base = req->element_head->key.data;
-    chain_request_header->buf.iov_len = req->element_head->key.length;
+    lt_http_header_element_t *element = req->element_head;
+    lt_chain_t *chain_request_header_field = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    chain_request_line->next = chain_request_header_field;
 
+    lt_chain_t *new_chain;
+    lt_chain_t *old_chain = chain_request_line;
+
+    for (;;) {
+        //insert(old_chain, &chain_request_header_field);
+        //old_chain->next = insertion_chain; A situation
+        //insertion_chain->next = chain_request_header_field; B situation
+        chain_request_header_field->buf.iov_base = element->value.data;
+        chain_request_header_field->buf.iov_len = element->value.length;
+        chain_request_header_field->next = NULL;
+
+        if (element == req->element_tail) {
+            break;
+        }
+
+        element = element->next;
+        new_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+        old_chain = chain_request_header_field;
+        chain_request_header_field->next = new_chain;
+        chain_request_header_field = new_chain;
+    }
 
 
     return chain_request_line;

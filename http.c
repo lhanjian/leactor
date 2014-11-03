@@ -283,6 +283,9 @@ int http_process_request_headers(connection_t *conn, void *arg)
 //    if (timeout) TODO
     request_t *req = (request_t *)arg;
     int rc = LAGAIN;
+    lt_http_header_element_t *prev_header_element = NULL;
+    req->element_head = NULL;
+    req->element_tail = NULL;
     for (;;) {
         if (rc == LAGAIN) {
             if (req->header_in->pos == req->header_in->end) {
@@ -290,6 +293,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             }
 //            ssize_t n = http_read_request_header(req);
         }
+
 
         rc = ngx_http_parse_header_line(req, req->header_in, 0/*TODO?*/);
 
@@ -301,6 +305,14 @@ int http_process_request_headers(connection_t *conn, void *arg)
             lt_http_header_element_t *header_element = 
                 lt_alloc(req->header_pool, &req->header_pool_manager);
 
+            if (req->element_head == NULL) {
+                req->element_head = header_element;
+                req->element_tail = header_element;
+                prev_header_element = header_element;
+            } else {
+                prev_header_element->next = header_element;
+                req->element_tail = header_element;
+            }
             //MUST BE COMPLETED
             header_element->hash = req->header_hash;//inline can reduce code number
             lt_string_assign_new(&header_element->key, 
