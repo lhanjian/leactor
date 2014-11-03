@@ -276,3 +276,21 @@ lt_accept(int fd, struct sockaddr *peer)
 
     return conn_fd;
 }
+
+lt_chain_t *construct_chains(request_t *req)
+{
+    lt_new_memory_pool_manager(&req->chain_pool_manager);
+    req->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &req->chain_pool_manager, NULL);
+
+    lt_chain_t *chain_request_line = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    chain_request_line->buf.iov_base = req->request_start;
+    chain_request_line->buf.iov_len = req->request_length;
+
+    lt_chain_t *chain_request_header = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    chain_request_header->buf.iov_base = req->element_head->key.data;
+    chain_request_header->buf.iov_len = req->element_head->key.length;
+
+
+
+    return chain_request_line;
+}

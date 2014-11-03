@@ -55,7 +55,6 @@ typedef struct request {
     lt_buffer_t *header_in;//parse pos
     int state;
 
-
 //request_line part
     struct string method_name;
     char *method_end;
@@ -106,6 +105,9 @@ typedef struct request {
 
     struct lt_memory_pool *header_pool;
     struct lt_memory_pool  header_pool_manager;
+
+    struct lt_memory_pool *chain_pool;
+    struct lt_memory_pool  chain_pool_manager;
 } request_t;
 
 

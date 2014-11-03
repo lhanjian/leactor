@@ -91,17 +91,15 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
 {
     int fd = proxy_single->conn->fd;
 
-    lt_buffer_t *buf = req->header_in;
+ //   lt_buffer_t *buf = req->header_in;
 /*    buf = lt_new_buffer_chain(proxy_single->buf_pool, 
             &proxy_single->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);*/
-
-    lt_chain_t *chain;
-
+//    lt_chain_t *chain = construct_chains();
     //create_chain_and_modify_req_to_chain
-
-    lt_chain_t *new_chain = send_chains(fd, chain);
-
+//    lt_chain_t *new_chain = send_chains(fd, chain);
 //    send_buffer_chains_loop(fd, buf);
+
+    
 
     return 0;
 }
