@@ -72,3 +72,9 @@ SO_REUSEPORT
 request_line
 request_header
     request_header_field
+
+ngx_http_upstream_process_header
+ngx_http_upstream_copy_content_type
+ngx_strcasecmp(u_char *s1, u_char *s2)
+// implement our own ngx_strcasecmp()/ngx_strncasecmp()
+ * to avoid libc locale overhead.   
