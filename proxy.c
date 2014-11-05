@@ -10,11 +10,12 @@ int proxy_connect_writable(event_t *ev, void *arg)
     int err;
     socklen_t len = sizeof(err);
 
-    if (getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+    if (getsockopt(conn->proxy_fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
         perror("getsockopt CONNECT_writable:");
         return LERROR;
     }
     if (err == 0) {
+        conn->status = L_PROXY_CONNECTED;
         //SUCCESS
         lt_io_remove(ev->base, ev);
     }
@@ -50,15 +51,16 @@ connection_t *proxy_connect_backend(proxy_t *proxy, conf_t *conf)
 {
     proxy = proxy_single;
     proxy->conn_list[0].peer_addr_c = "localhost";
-    if (proxy_connect(&proxy->conn_list[0], conf)) {
+/*    if (proxy_connect(&proxy->conn_list[0], conf)) {
         return &proxy->conn_list[0];
     }
+    */
 
     return NULL;
 }
 
 
-int proxy_connect(connection_t *conn, conf_t *conf)
+int proxy_connect(connection_t *conn, http_t *http)
 {
     conn->peer_addr_in.sin_family = AF_INET;
     conn->peer_addr_in.sin_port = htons(80);
@@ -66,24 +68,24 @@ int proxy_connect(connection_t *conn, conf_t *conf)
               conn->peer_addr_c, 
              &conn->peer_addr_in.sin_addr);
 
-    conn->fd = socket(conn->peer_addr_in.sin_family, 
+    conn->proxy_fd = socket(conn->peer_addr_in.sin_family, 
                       SOCK_STREAM|SOCK_NONBLOCK,
                       IPPROTO_TCP);
-    if (conn->fd == -1) {
-        perror("connect backend");
-        return -1;
+    if (conn->proxy_fd == -1) {
+        perror("socket proxy backend");
+        return LERROR;
     }
-    conn->status = LCONNECTING;
+    conn->status = L_PROXY_CONNECTING;
     
-    int rv = connect(conn->fd, 
+    int rv = connect(conn->proxy_fd, 
                      (struct sockaddr *)&conn->peer_addr_in, 
                      sizeof(struct sockaddr));
     if (rv < 0 && errno == EINPROGRESS) {
-        conn->ev = lt_io_add(conf->base, conn->fd, LV_FDWR|LV_CONN, 
+        conn->ev = lt_io_add(http->base, conn->proxy_fd, LV_FDWR|LV_CONN|LV_ONESHOT, 
                 proxy_connect_writable, conn, INF);
         return LAGAIN;
     } else if (!rv) {
-        conn->status = LCONNECTED;
+        conn->status = L_PROXY_CONNECTED;
         return LOK;
         //SUCCESS
     } else {
@@ -95,7 +97,7 @@ int proxy_connect(connection_t *conn, conf_t *conf)
 
 int proxy_send_to_upstream(connection_t *conn, request_t *req)
 {
-    int fd ;//= proxy_single->conn[conn->]->fd;
+    int proxy_fd = conn->proxy_fd;;//= proxy_single->conn[conn->]->fd;
 
  //   lt_buffer_t *buf = req->header_in;
 /*    buf = lt_new_buffer_chain(proxy_single->buf_pool, 
@@ -107,7 +109,7 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
 
     lt_chain_t *send_chain = construct_chains(req);
 
-    lt_chain_t *remain_chain = send_chains(fd, send_chain);
+    lt_chain_t *remain_chain = send_chains(proxy_fd, send_chain);
 
     return 0;
 }

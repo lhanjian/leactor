@@ -59,6 +59,21 @@ lt_add_to_readylist(ready_evlist_t *readylist, //deleted_evlist_t* deletedlist,
     return event;
 }
 
+int lt_new_post_callback(base_t *base, func_t callback, void *arg, flag_t flag)
+{
+    event_t *ev = lt_ev_constructor_(&base->readylist, flag, -1, callback, arg, UNDELETED);
+    event_t *active_head_ev = base->activelist.head;
+    if (active_head_ev) {
+        active_head_ev->next_active_ev = ev;
+        base->activelist.tail = ev;
+    } else {
+        base->activelist.head = ev;
+        base->activelist.tail = ev;
+    }
+
+    return 0;
+}
+
 int 
 epoll_init()
 {
@@ -84,6 +99,7 @@ lt_base_init(void)
     }
 
     base->epfd = epfd;
+    base->activelist.head = NULL;
     /*base->readylist.event_pool_manager = */
     lt_new_memory_pool_manager(&base->readylist.event_pool_manager);
     base->readylist.event_pool = 
@@ -162,15 +178,18 @@ lt_io_mod(base_t *base, event_t *ev, flag_t new_flag_set,//自行获取原有的
 
 
 static void//res_t
-lt_ev_process_and_moveout(active_evlist_t *actlist, lt_time_t nowtime)
+lt_ev_process_and_moveout(base_t *base, /*active_evlist_t *actlist,*/ lt_time_t nowtime)
 {
+    active_evlist_t *actlist = &base->activelist;
+    ready_evlist_t *readylist = &base->readylist;
     for (event_t *event = actlist->head; 
             event != NULL; 
             event = event->next_active_ev) {//Why not use Tree?
 		if (lt_ev_check_timeout(event, nowtime)) {
             event->deleted = 1;
         } else if (event->deleted){ //cluster some event and del it;
-            
+            lt_remove_from_readylist(event, readylist);//TODO?
+//            lt_io_remove(<#base_t *base#>, <#event_t *ev#>)
         } else {
             event->callback(event, event->arg);
             event->deleted = event->flag & LV_ONESHOT;//TODO
@@ -191,6 +210,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
         if (ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
             if (ev->flag & LV_LAG ) {
                 actlist->head = ev;//lag
+                actlist->tail = ev;
                 break;
             } else {
                 ev->callback(ev, ev->arg);//directly callback
@@ -211,6 +231,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
             ev->callback(ev, ev->arg); 
         }
     }
+    actlist->tail = ev_prev;
 
     return ;
 }
@@ -253,6 +274,8 @@ void timerfd_epoll_init(struct timespec timeout, base_t *base)
     lt_io_add(base, tfd, LV_FDRD|LV_CONN, timerfd_expiration, NULL, NO_TIMEOUT);
     return ;
 }
+
+
 
 res_t 
 lt_base_loop(base_t *base, int timeout)

@@ -68,6 +68,15 @@ lt_chain_t *send_chains(int fd, lt_chain_t *out_chain)
     struct iovec out_vec[chain_len];
 
     ssize_t rv = writev(fd, out_vec, chain_len);
+    if (rv == -1) {
+        int errsv = errno;
+        switch (errsv) {
+            case EAGAIN://POST_SEND:TODO
+                break;
+            default:
+                break;
+        }
+    }
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) {
         int iov_len = cur->buf.iov_len;
         if (rv > iov_len) {

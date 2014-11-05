@@ -330,7 +330,8 @@ int http_process_request_headers(connection_t *conn, void *arg)
         if (rc == HTTP_PARSE_HEADER_DONE) {
             req->request_length += req->header_in->pos - req->header_name_start;
             debug_print("%s", "DONE\n");
-            proxy_send_to_upstream(conn, req);
+
+            proxy_send_to_upstream(conn, req);//NEXT
 //            req->http_state = HTTP_PROCE
 //            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
 //            http_validation_host(req);
@@ -387,7 +388,7 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting 
     }
 
-    if (conn->status == LACCEPTED ) { //New connection
+    if (conn->status > LACCEPTED/**/ ) { //New connection
         request_t *req = http_create_request(conn);
         http_process_request_line(conn, req);
 
@@ -412,7 +413,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
 
-    conn->buf = lt_new_buffer_chain(http->listen.buf_pool, 
+    conn->buf = lt_new_buffer_chain(http->listen.buf_pool, //when to release TODO
             &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
 
     conn->buf_pool_manager = &http->listen.buf_pool_manager;
@@ -425,6 +426,12 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
             http_data_coming, conn, INF);
     
+    int rv = proxy_connect(conn, http);
+    if (rv == LERROR) {//TODO
+        lt_free(http->listen.buf_pool, conn->buf)
+        lt_free(http->listen.connection_pool, conn);
+        return NULL;
+    }
     //add_timer
     return conn;
 }

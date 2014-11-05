@@ -133,8 +133,9 @@ typedef struct {
 
 typedef struct {
     int event_len;
-    event_t **eventarray;
+//    event_t **eventarray;
     event_t *head;
+    event_t *tail;
 } active_evlist_t;
 
 
@@ -167,6 +168,7 @@ res_t     lt_base_loop(base_t *base, int timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 //void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
+void      lt_remove_from_readylist(event_t *, ready_evlist_t *);
 //res_t     lt_remove_from_readylist(event_t *ev, ready_evlist_t *evlist);
 //res_t     lt_remove_from_readylist(event_t *ev, active_evlist_t *evlist);
 #define time_a_gt_b(X,Y,Z) ((long long)X Y (unsigned long long)Z)

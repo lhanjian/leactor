@@ -113,6 +113,7 @@ typedef struct request {
 
 typedef struct connection {
     int fd;
+    int proxy_fd;
     struct sockaddr peer_addr;
     struct sockaddr_in peer_addr_in;
     char *peer_addr_c;
@@ -190,10 +191,10 @@ typedef struct proxy {
 
 proxy_t *proxy_worker_new(base_t *, conf_t *);
 connection_t *proxy_connect_backend(proxy_t *, conf_t *);
-int proxy_connect(connection_t *, conf_t *);
+int proxy_connect(connection_t *, http_t *);
 int proxy_send_to_upstream(connection_t *conn, request_t *req);
 lt_chain_t *construct_chains(request_t *req);
 
-#define LCONNECTING (-1);
-#define LCONNECTED (-2);
-#define LACCEPTED (-2);//CONNECTED is equal to ACCEPTED
+#define L_PROXY_CONNECTED (-1);
+#define L_PROXY_CONNECTING (-2);
+#define LACCEPTED (-3);//CONNECTED is equal to ACCEPTED
