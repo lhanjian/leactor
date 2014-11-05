@@ -1,7 +1,7 @@
 #include "http.h"
 #include "ngx_http_parse.h"
 
-proxy_t *proxy_single;
+static proxy_t *proxy_single;
 
 int proxy_connect_writable(event_t *ev, void *arg)
 {
@@ -34,24 +34,29 @@ proxy_t *proxy_worker_new(base_t *base, conf_t *conf)
     lt_new_memory_pool_manager(&proxy->buf_pool_manager);
     proxy->buf_pool = lt_new_memory_pool(sizeof(lt_buffer_t), 
             &proxy->buf_pool_manager, NULL);
-
+/*
     int rv = proxy_connect_backend(proxy, conf);
     if (rv) {
         free(proxy);
         return NULL;
     }
+    */
 
     proxy_single = proxy;
     return proxy;
 }
 
-int proxy_connect_backend(proxy_t *proxy, conf_t *conf)
+connection_t *proxy_connect_backend(proxy_t *proxy, conf_t *conf)
 {
-    proxy->conn[0].peer_addr_c = "localhost";
-    if (proxy_connect(&proxy->conn[0], conf)) {
+    proxy = proxy_single;
+    proxy->conn_list[0].peer_addr_c = "localhost";
+    if (proxy_connect(&proxy->conn_list[0], conf)) {
+        return &proxy->conn_list[0];
     }
-    return 0;
+
+    return NULL;
 }
+
 
 int proxy_connect(connection_t *conn, conf_t *conf)
 {
@@ -68,7 +73,7 @@ int proxy_connect(connection_t *conn, conf_t *conf)
         perror("connect backend");
         return -1;
     }
-    conn->status = 0;
+    conn->status = LCONNECTING;
     
     int rv = connect(conn->fd, 
                      (struct sockaddr *)&conn->peer_addr_in, 
@@ -78,6 +83,7 @@ int proxy_connect(connection_t *conn, conf_t *conf)
                 proxy_connect_writable, conn, INF);
         return LAGAIN;
     } else if (!rv) {
+        conn->status = LCONNECTED;
         return LOK;
         //SUCCESS
     } else {
@@ -89,7 +95,7 @@ int proxy_connect(connection_t *conn, conf_t *conf)
 
 int proxy_send_to_upstream(connection_t *conn, request_t *req)
 {
-    int fd = proxy_single->conn->fd;
+    int fd ;//= proxy_single->conn[conn->]->fd;
 
  //   lt_buffer_t *buf = req->header_in;
 /*    buf = lt_new_buffer_chain(proxy_single->buf_pool, 
@@ -99,7 +105,9 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
 //    lt_chain_t *new_chain = send_chains(fd, chain);
 //    send_buffer_chains_loop(fd, buf);
 
-    
+    lt_chain_t *send_chain = construct_chains(req);
+
+    lt_chain_t *remain_chain = send_chains(fd, send_chain);
 
     return 0;
 }

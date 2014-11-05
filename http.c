@@ -259,22 +259,17 @@ int http_process_element(request_t *req, lt_http_header_element_t *element)
     };
 
     unsigned hash = BKDRhash(element->lowcase_key.data, element->lowcase_key.length);
-    if (hash == HostHash) {
+    if (hash == HostHash) {//TODO use hash-find?
         http_process_host(req, &element->value/*, 28*/);
         if (http_find_host(req)) {
             return LERROR;
         }
     }
+//  if (hash == ContentLengthHash) {
+//  //for HTTP POST
+//  }
+//
 
-    if (req->element_head == NULL) {
-        req->element_head = element;
-        req->element_tail = element;
-    } else {
-        req->element_tail->next = element;
-        req->element_tail = element;
-    }
-    element->next = NULL;
-    //TODO hash == othersXXX
     return LOK;
 }
 
@@ -312,6 +307,8 @@ int http_process_request_headers(connection_t *conn, void *arg)
             } else {
                 prev_header_element->next = header_element;
                 req->element_tail = header_element;
+                header_element->next = NULL;
+                prev_header_element = header_element;
             }
             //MUST BE COMPLETED
             header_element->hash = req->header_hash;//inline can reduce code number
@@ -390,7 +387,7 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting 
     }
 
-    if (!conn->status) { //New connection
+    if (conn->status == LACCEPTED ) { //New connection
         request_t *req = http_create_request(conn);
         http_process_request_line(conn, req);
 
@@ -419,7 +416,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
             &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
 
     conn->buf_pool_manager = &http->listen.buf_pool_manager;
-    conn->status = 0;
+    conn->status = LACCEPTED;
 
     lt_new_memory_pool_manager(&conn->request_pool_manager);
     conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
@@ -427,6 +424,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
             http_data_coming, conn, INF);
+    
     //add_timer
     return conn;
 }

@@ -128,7 +128,8 @@ typedef struct connection {
     struct request *request_list;
 
     lt_buffer_t *buf;
-    struct lt_memory_pool *buf_pool_manager;
+
+    struct lt_memory_pool *buf_pool_manager;//copy from proxy_t/listen_t
 
     int status;
 
@@ -182,12 +183,17 @@ typedef struct http_header_element {
 void lowcase_key_copy_from_origin(struct string *, struct string *);
 typedef struct proxy {
     base_t *base;
-    connection_t conn[4];//TEMP TODO
+    connection_t *conn_list;//TEMP TODO
     struct lt_memory_pool *buf_pool;
     struct lt_memory_pool buf_pool_manager;
 } proxy_t;
 
 proxy_t *proxy_worker_new(base_t *, conf_t *);
-int proxy_connect_backend(proxy_t *, conf_t *);
+connection_t *proxy_connect_backend(proxy_t *, conf_t *);
 int proxy_connect(connection_t *, conf_t *);
 int proxy_send_to_upstream(connection_t *conn, request_t *req);
+lt_chain_t *construct_chains(request_t *req);
+
+#define LCONNECTING (-1);
+#define LCONNECTED (-2);
+#define LACCEPTED (-2);//CONNECTED is equal to ACCEPTED

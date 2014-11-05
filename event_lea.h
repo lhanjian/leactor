@@ -195,13 +195,13 @@ res_t base_free(base_t *base_rlve);
 #define LEAGAIN (-3)
 #define LEINTR  (-4)
 
+#define L_INVALID_METHOD (-7)
 #define LABORT (-6)
 #define LCLOSE (-5)
 #define LAPART (-4)
 #define LAGAIN (-3)
 #define LERROR (-2)
 #define LOK    (0)
-#define L_INVALID_METHOD (-7)
 
 
 ssize_t lt_recv(int, lt_buffer_t *);
