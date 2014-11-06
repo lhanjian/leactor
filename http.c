@@ -321,19 +321,22 @@ int http_process_request_headers(connection_t *conn, void *arg)
             if (http_process_element(req, header_element) == LERROR) {
                 //close connection
             }
-
         }
-
         //MUST BE COMPLETED
         if (rc == HTTP_PARSE_HEADER_DONE) {
             req->request_length += req->header_in->pos - req->header_name_start;
             debug_print("%s", "DONE\n");
 
+            if (conn->proxy_status == L_PROXY_SENDING_RESPONSE_TO_CLIENT) {
+
+            }
+
+            //if (conn->status == L_PROXY_SENDING_
             proxy_send_to_upstream(conn, req);//NEXT
+            return 0;
 //            req->http_state = HTTP_PROCE
 //            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
 //            http_validation_host(req);
-            return 0;
         }
     }
     return 0;
@@ -414,6 +417,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
             &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
 
     conn->buf_pool_manager = &http->listen.buf_pool_manager;
+    conn->buf_pool = http->listen.buf_pool;
     conn->status = LACCEPTED;
 
     lt_new_memory_pool_manager(&conn->request_pool_manager);
@@ -423,9 +427,9 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
             http_data_coming, conn, INF);
     
-    int rv = proxy_connect(conn, http);
+    int rv = proxy_connect(http, conn);//pair connection
     if (rv == LERROR) {//TODO
-        lt_free(http->listen.buf_pool, conn->buf)
+        lt_free(http->listen.buf_pool, conn->buf);
         lt_free(http->listen.connection_pool, conn);
         return NULL;
     }

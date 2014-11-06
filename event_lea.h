@@ -118,9 +118,9 @@ typedef struct event {
 typedef            int (*func_t)(struct event *, void *arg);
 
 typedef struct min_heap {
-        event_t **p;
-        unsigned  n;
-        unsigned  a;
+    event_t **p;
+    unsigned  n;
+    unsigned  a;
 } min_heap_t;
 
 typedef struct {
@@ -163,7 +163,7 @@ typedef struct base {
 lt_time_t lt_gettime(void);
 base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
-int lt_new_post_callback(base_t *, func_t, void *arg, flag_t);
+int lt_new_post_callback(base_t *, func_t, void *arg);
 void      lt_io_remove(base_t *base, event_t *ev);
 res_t     lt_base_loop(base_t *base, int timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
@@ -213,7 +213,7 @@ ssize_t lt_recv(int, lt_buffer_t *);
 //, size_t);
 int lt_accept(int, struct sockaddr *sockaddr);
 ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *buf);
-lt_chain_t *send_chains(int fd, lt_chain_t *buf);
+int send_chains(base_t *, int fd, lt_chain_t *);
 
 struct lt_string {
     int len;

@@ -10,14 +10,16 @@ int proxy_connect_writable(event_t *ev, void *arg)
     int err;
     socklen_t len = sizeof(err);
 
-    if (getsockopt(conn->proxy_fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+    if (getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
         perror("getsockopt CONNECT_writable:");
         return LERROR;
     }
     if (err == 0) {
         conn->status = L_PROXY_CONNECTED;
+        conn->buf = lt_new_buffer_chain(conn->buf_pool, 
+                conn->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);
         //SUCCESS
-        lt_io_remove(ev->base, ev);
+//        lt_io_remove(ev->base, ev);
     }
     return 0;
 }
@@ -59,32 +61,41 @@ connection_t *proxy_connect_backend(proxy_t *proxy, conf_t *conf)
 }
 */
 
-int proxy_connect(connection_t *conn, http_t *http)
+int proxy_connect(http_t *http, connection_t *conn)
 {
     conn->peer_addr_in.sin_family = AF_INET;
     conn->peer_addr_in.sin_port = htons(80);
     inet_pton(conn->peer_addr_in.sin_family, 
               conn->peer_addr_c, 
              &conn->peer_addr_in.sin_addr);
+//proxy connection initiazation
+    conn->pair = lt_alloc(http->listen.connection_pool, 
+            &http->listen.connection_pool_manager);
+    conn->pair->request_pool_manager = conn->request_pool_manager;
+    conn->pair->buf_pool = conn->buf_pool;
+    conn->pair->buf_pool_manager = conn->buf_pool_manager;
+        
 
-    conn->proxy_fd = socket(conn->peer_addr_in.sin_family, 
+    conn->pair->pair = conn;
+
+    conn->pair->fd = socket(conn->peer_addr_in.sin_family, 
                       SOCK_STREAM|SOCK_NONBLOCK,
                       IPPROTO_TCP);
-    if (conn->proxy_fd == -1) {
+    if (conn->pair->fd == -1) {
         perror("socket proxy backend");
         return LERROR;
     }
-    conn->status = L_PROXY_CONNECTING;
+    conn->pair->status = L_PROXY_CONNECTING;
     
-    int rv = connect(conn->proxy_fd, 
+    int rv = connect(conn->pair->fd, 
                      (struct sockaddr *)&conn->peer_addr_in, 
                      sizeof(struct sockaddr));
     if (rv < 0 && errno == EINPROGRESS) {
-        conn->ev = lt_io_add(http->base, conn->proxy_fd, LV_FDWR|LV_CONN|LV_ONESHOT, 
-                proxy_connect_writable, conn, INF);
+        conn->pair->ev = lt_io_add(conn->ev->base, conn->pair->fd, 
+                LV_FDWR|LV_CONN|LV_ONESHOT, proxy_connect_writable, conn->pair, INF);
         return LAGAIN;
     } else if (!rv) {
-        conn->status = L_PROXY_CONNECTED;
+        conn->pair->status = L_PROXY_CONNECTED;
         return LOK;
         //SUCCESS
     } else {
@@ -94,23 +105,54 @@ int proxy_connect(connection_t *conn, http_t *http)
     return 0;
 }
 
+int proxy_data_coming(event_t *ev, void *arg)
+{
+    connection_t *conn = (connection_t *)arg;
+    int rv = lt_recv(conn->proxy_fd, conn->proxy_buf);
+    if (rv == LAGAIN) {
+    } else if (rv == LCLOSE) {
+    } else if (rv == LERROR) {
+    }
+
+    if (conn->proxy_status == L_PROXY_WAITING_RESPONSE) {
+        request_t *req = http_create_request(conn);
+        http_process_request_line(conn, req);
+
+        conn->handler = http_process_request_line;
+        conn->handler_arg = req;
+        return 0;
+    } else {
+        conn->handler(conn, conn->handler_arg);
+    }
+    //send_chains(ev->base, conn->fd, <#lt_chain_t *#>)
+    return 0;
+}
+
 int proxy_send_to_upstream(connection_t *conn, request_t *req)
 {
-    int proxy_fd = conn->proxy_fd;;//= proxy_single->conn[conn->]->fd;
-
- //   lt_buffer_t *buf = req->header_in;
-/*    buf = lt_new_buffer_chain(proxy_single->buf_pool, 
-            &proxy_single->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);*/
-//    lt_chain_t *chain = construct_chains();
-    //create_chain_and_modify_req_to_chain
-//    lt_chain_t *new_chain = send_chains(fd, chain);
-//    send_buffer_chains_loop(fd, buf);
+    int proxy_fd = conn->pair->fd;//= proxy_single->conn[conn->]->fd;
+    base_t *base = conn->ev->base;
+    connection_t *proxy_conn = conn->pair;
 
     lt_chain_t *send_chain = construct_chains(req);
 
-//    lt_chain_t *remain_chain = send_chains(proxy_fd, send_chain);
+    int rv = send_chains(base, proxy_fd, send_chain);
+    switch (rv) {
+        case LOK:
+            proxy_conn->status = L_PROXY_WAITING_RESPONSE;
+            //http_finish_request
+            break;
+        case LAGAIN:
+            proxy_conn->status = L_PROXY_WRITING;
+            break;
+        case LERROR:
+        default:
+            proxy_conn->status = L_PROXY_ERROR;
+    }
+
 //  应当一口气发完，然后让下层通知上层
-    lt_io_add(conn->ev->base, conn->proxy_fd, LV_CONN|LV_FDRD, proxy_data_coming, conn, NO_TIMEOUT);
+    lt_io_add(conn->ev->base, proxy_fd, LV_CONN|LV_FDRD, 
+            proxy_data_coming, proxy_conn, NO_TIMEOUT);
 
     return 0;
 }

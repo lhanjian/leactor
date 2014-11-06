@@ -122,19 +122,27 @@ typedef struct connection {
     int (*handler)(struct connection *, void *);
     void *handler_arg;
 
+    int (*proxy_handler)(struct connection *, void *);
+    void *proxy_handler_arg;
+
     struct event *ev;
+    struct event *proxy_ev;
 
     struct lt_memory_pool *request_pool;
     struct lt_memory_pool request_pool_manager;
     struct request *request_list;
 
     lt_buffer_t *buf;
+    lt_buffer_t *proxy_buf;
 
+    struct lt_memory_pool *buf_pool;//copy from proxy_t/listen_t
     struct lt_memory_pool *buf_pool_manager;//copy from proxy_t/listen_t
 
     int status;
+    int proxy_status;
 
     struct connection *next;
+    struct connection *pair;
 
     lt_chain_t *upstream_chain;
     lt_chain_t *downstream_chain;
@@ -176,6 +184,7 @@ void ignore_sigpipe(void);
 
 http_t *http_master_new(base_t *, conf_t *);
 http_t *http_worker_new(base_t *, conf_t *);
+request_t *http_create_request(connection_t *);
 
 typedef struct http_header_element {
     int hash;
@@ -195,10 +204,14 @@ typedef struct proxy {
 
 proxy_t *proxy_worker_new(base_t *, conf_t *);
 connection_t *proxy_connect_backend(proxy_t *, conf_t *);
-int proxy_connect(connection_t *, http_t *);
+int proxy_connect(http_t *, connection_t *);
 int proxy_send_to_upstream(connection_t *conn, request_t *req);
 lt_chain_t *construct_chains(request_t *req);
 
-#define L_PROXY_CONNECTED (-1);
-#define L_PROXY_CONNECTING (-2);
-#define LACCEPTED (-3);//CONNECTED is equal to ACCEPTED
+#define L_PROXY_CONNECTED (-1)
+#define L_PROXY_CONNECTING (-2)
+#define LACCEPTED (-3)//CONNECTED is equal to ACCEPTED
+#define L_PROXY_WAITING_RESPONSE (-4)
+#define L_PROXY_WRITING (-5)
+#define L_PROXY_ERROR (-6)
+#define L_PROXY_SENDING_RESPONSE_TO_CLIENT (-4)

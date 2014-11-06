@@ -56,7 +56,15 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     return buf;
 }
 
-lt_chain_t *send_chains(int fd, lt_chain_t *out_chain)
+int resend_chains(event_t *ev, void *arg)
+{
+    lt_chain_t *chain = (lt_chain_t *)arg;
+    send_chains(ev->base, ev->fd, chain);
+
+    return 0;
+}
+
+int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
 {
     int chain_len = 0;
     lt_chain_t *rv_chain;
@@ -72,11 +80,14 @@ lt_chain_t *send_chains(int fd, lt_chain_t *out_chain)
         int errsv = errno;
         switch (errsv) {
             case EAGAIN://POST_SEND:TODO
-                break;
+                lt_new_post_callback(base, resend_chains, out_chain);
+                return LAGAIN;
             default:
+                return LERROR;
                 break;
         }
     }
+    
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) {
         int iov_len = cur->buf.iov_len;
         if (rv > iov_len) {
@@ -92,14 +103,13 @@ lt_chain_t *send_chains(int fd, lt_chain_t *out_chain)
                 rv -= iov_len;
                 continue;
             } else /*if(rv < iov_len)*/ {
-                return rv_chain;
+                lt_new_post_callback(base, resend_chains, out_chain);
+                return LAGAIN;
             }
         }
     }
 
-
-    return NULL;//all complete;
-    
+    return LOK;//all complete;
 }
 
 /*

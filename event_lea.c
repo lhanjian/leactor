@@ -59,9 +59,9 @@ lt_add_to_readylist(ready_evlist_t *readylist, //deleted_evlist_t* deletedlist,
     return event;
 }
 
-int lt_new_post_callback(base_t *base, func_t callback, void *arg, flag_t flag)
+int lt_new_post_callback(base_t *base, func_t callback, void *arg)//.*, flag_t flag)
 {
-    event_t *ev = lt_ev_constructor_(&base->readylist, flag, -1, callback, arg, UNDELETED);
+    event_t *ev = lt_ev_constructor_(&base->readylist, LV_ONESHOT, -1, callback, arg, UNDELETED);
     event_t *active_head_ev = base->activelist.head;
     if (active_head_ev) {
         active_head_ev->next_active_ev = ev;
