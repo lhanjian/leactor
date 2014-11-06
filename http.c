@@ -484,4 +484,10 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
     return http;
 }
 
+int http_send_to_client(connection_t *conn, request_t *req)
+{
+    lt_chain_t *out_chain = construct_chains(req);
+    send_chains(conn->ev->base, conn->fd, out_chain);
+    return 0;
+}
 //TODO:key-value pair

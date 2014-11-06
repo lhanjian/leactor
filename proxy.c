@@ -74,6 +74,8 @@ int proxy_connect(http_t *http, connection_t *conn)
     conn->pair->request_pool_manager = conn->request_pool_manager;
     conn->pair->buf_pool = conn->buf_pool;
     conn->pair->buf_pool_manager = conn->buf_pool_manager;
+    conn->pair->request_pool = conn->request_pool;
+    conn->pair->request_pool_manager = conn->request_pool_manager;
         
 
     conn->pair->pair = conn;
@@ -146,11 +148,11 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
             proxy_conn->status = L_PROXY_WRITING;
             break;
         case LERROR:
+        case LCLOSE:
         default:
             proxy_conn->status = L_PROXY_ERROR;
     }
 
-//  应当一口气发完，然后让下层通知上层
     lt_io_add(conn->ev->base, proxy_fd, LV_CONN|LV_FDRD, 
             proxy_data_coming, proxy_conn, NO_TIMEOUT);
 
