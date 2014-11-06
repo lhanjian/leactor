@@ -163,6 +163,7 @@ typedef struct base {
 lt_time_t lt_gettime(void);
 base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
+int lt_new_post_callback(base_t *, func_t, void *arg, flag_t);
 void      lt_io_remove(base_t *base, event_t *ev);
 res_t     lt_base_loop(base_t *base, int timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
@@ -175,6 +176,7 @@ void      lt_remove_from_readylist(event_t *, ready_evlist_t *);
 //#define lt_time_add(X, Y) ((lt_time_t)(X))
 lt_time_t lt_time_addition(lt_time_t , to_t);
 long long lt_time_a_sub_b(lt_time_t a, lt_time_t b);
+
 /*
 //initialize a base
 res_t base_init(base_t *base_null);

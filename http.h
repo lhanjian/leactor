@@ -38,7 +38,7 @@ static inline void lt_string_assign_new(lt_string_t *p, int length, char *data)
 {
     p->data = data;
     p->length = length;
-    p->data[p->length] = '\0';
+//    p->data[p->length] = '\0';
 }
 
 typedef struct conf {
@@ -135,6 +135,10 @@ typedef struct connection {
     int status;
 
     struct connection *next;
+
+    lt_chain_t *upstream_chain;
+    lt_chain_t *downstream_chain;
+    
     int timeout;
     int close;
 } connection_t;

@@ -269,7 +269,6 @@ int http_process_element(request_t *req, lt_http_header_element_t *element)
 //  //for HTTP POST
 //  }
 //
-
     return LOK;
 }
 
@@ -288,7 +287,6 @@ int http_process_request_headers(connection_t *conn, void *arg)
             }
 //            ssize_t n = http_read_request_header(req);
         }
-
 
         rc = ngx_http_parse_header_line(req, req->header_in, 0/*TODO?*/);
 
@@ -360,7 +358,6 @@ int http_process_request_line(connection_t *conn, void *arg)
 
     return 0;
 }
-
 
 int http_data_coming(event_t *ev, void *arg)
 {
