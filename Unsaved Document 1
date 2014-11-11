@@ -90,3 +90,17 @@ Readable/Writable/Timer/
 
 Readable = ConnectionSuccess | ConnectionClose
 ConnectionSuccess = 
+
+
+
+
+. The most severely contended locks include inode_lock and dcache_lock which are unnecessary for pseudo file systems like sockfs
+
+Non Local Process of Connections
+    Net-RX SoftIRQ in interrupt context
+    Application and System Call in process context
+Two phases are often handles by different CPU cores
+    Introduces lock contentions
+    Causes CPU cache bouncing.
+
+Intensive synchronization for Inode and Dentry in VFS 
