@@ -83,3 +83,10 @@ ngx_strcasecmp(u_char *s1, u_char *s2)
 
 对于不需要与IO相关的事件，应该在哪一层实现？
 根本就不要readylist？
+
+
+
+Readable/Writable/Timer/
+
+Readable = ConnectionSuccess | ConnectionClose
+ConnectionSuccess = 
