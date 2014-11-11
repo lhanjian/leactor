@@ -185,6 +185,7 @@ void ignore_sigpipe(void);
 http_t *http_master_new(base_t *, conf_t *);
 http_t *http_worker_new(base_t *, conf_t *);
 request_t *http_create_request(connection_t *);
+int http_process_request_line(connection_t *, void *arg);
 
 typedef struct http_header_element {
     int hash;
