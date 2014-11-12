@@ -163,6 +163,7 @@ typedef struct base {
 lt_time_t lt_gettime(void);
 base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
+event_t*  lt_io_mod(base_t *base, event_t *ev, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 int lt_new_post_callback(base_t *, func_t, void *arg);
 void      lt_io_remove(base_t *base, event_t *ev);
 res_t     lt_base_loop(base_t *base, int timeout);

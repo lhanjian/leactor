@@ -1,7 +1,7 @@
 #include "http.h"
 #include "ngx_http_parse.h"
 
-static proxy_t *proxy_single;
+//static proxy_t *proxy_single;
 
 int proxy_connect_writable(event_t *ev, void *arg)
 {
@@ -60,6 +60,12 @@ connection_t *proxy_connect_backend(proxy_t *proxy, conf_t *conf)
     return NULL;
 }
 */
+
+char *proxy_get_upstream_addr()//TODO
+{
+    char *upstream = "127.0.0.1";//TODO
+    return  upstream;
+}
 
 int proxy_connect(http_t *http, connection_t *conn)
 {
@@ -151,10 +157,14 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
         case LCLOSE:
         default:
             proxy_conn->status = L_PROXY_ERROR;
+            debug_print("%s", "ERROR\n");
     }
 
+    lt_io_mod(base, conn->ev, LV_FDRD|LV_CONN, proxy_data_coming, conn->pair, NO_TIMEOUT);
+/*
     lt_io_add(conn->ev->base, proxy_fd, LV_CONN|LV_FDRD, 
             proxy_data_coming, proxy_conn, NO_TIMEOUT);
+            */
 
     return 0;
 }

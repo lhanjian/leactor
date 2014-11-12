@@ -169,7 +169,9 @@ lt_io_mod(base_t *base, event_t *ev, flag_t new_flag_set,//自行获取原有的
             ev->endtime = lt_timeout_add(base, ev, timeout);
         } else {
             ev->min_heap_idx = -1;
-        }
+        } 
+
+        ev->flag = new_flag_set;
 
         lt_mod_to_epfd(base->epfd, ev, ev->fd, new_flag_set);
     }
@@ -308,7 +310,7 @@ lt_base_loop(base_t *base, int timeout)
 
 		lt_loop_init_actlist(base, epevents, ready);
 
-        lt_ev_process_and_moveout(&base->activelist, after);
+        lt_ev_process_and_moveout(base, after);
 
         if (ready == epevents_len)
             epevents_len *= 2;

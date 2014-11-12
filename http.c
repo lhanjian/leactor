@@ -1,4 +1,3 @@
-#define DEBUG (1)
 
 
 #include "http.h"
@@ -253,13 +252,14 @@ void lowcase_key_copy_from_origin(struct string *low, struct string *origin)
 
 int http_process_element(request_t *req, lt_http_header_element_t *element)
 {            
-    int field = -1;
+//    int field = -1;
     enum {
         fl_host = 0
     };
-
+/*//hashed in request_header_parse
     unsigned hash = BKDRhash(element->lowcase_key.data, element->lowcase_key.length);
-    if (hash == HostHash) {//TODO use hash-find?
+    */
+    if (element->hash == HostHash) {//TODO use hash-find?
         http_process_host(req, &element->value/*, 28*/);
         if (http_find_host(req)) {
             return LERROR;
@@ -388,7 +388,7 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting 
     }
 
-    if (conn->status > LACCEPTED/**/ ) { //New connection
+    if (conn->status == LACCEPTED ) { //New connection
         request_t *req = http_create_request(conn);
         http_process_request_line(conn, req);
 
@@ -427,6 +427,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
             http_data_coming, conn, INF);
     
+    conn->peer_addr_c = proxy_get_upstream_addr();
     int rv = proxy_connect(http, conn);//pair connection
     if (rv == LERROR) {//TODO
         lt_free(http->listen.buf_pool, conn->buf);

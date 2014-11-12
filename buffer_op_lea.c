@@ -67,7 +67,7 @@ int resend_chains(event_t *ev, void *arg)
 int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
 {
     int chain_len = 0;
-    lt_chain_t *rv_chain;
+    //lt_chain_t *rv_chain;
 
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
         chain_len++;
@@ -98,7 +98,7 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
         } else {
             cur->buf.iov_base  = (char *)cur->buf.iov_base + iov_len;
             cur->buf.iov_len -= rv;
-            rv_chain = cur;
+            //rv_chain = cur;
             if (rv == iov_len) {
                 rv -= iov_len;
                 continue;
@@ -275,7 +275,8 @@ int
 lt_accept(int fd, struct sockaddr *peer)
 {
     socklen_t socklen = sizeof(struct sockaddr);
-    int conn_fd = accept(fd, peer, &socklen);
+#define _GNU_SOURCE
+    int conn_fd = accept4(fd, peer, &socklen, SOCK_NONBLOCK);
     if (conn_fd == -1) {
         int err = errno;
         perror("accept4");
@@ -311,7 +312,7 @@ lt_chain_t *construct_chains(request_t *req)
     chain_request_line->next = chain_request_header_field;
 
     lt_chain_t *new_chain;
-    lt_chain_t *old_chain = chain_request_line;
+//    lt_chain_t *old_chain = chain_request_line;
 
     for (;;) {
         //insert(old_chain, &chain_request_header_field, element);
@@ -330,7 +331,7 @@ lt_chain_t *construct_chains(request_t *req)
 
         element = element->next;
         new_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
-        old_chain = chain_request_header_field;
+        //old_chain = chain_request_header_field;
         chain_request_header_field->next = new_chain;
         chain_request_header_field = new_chain;
     }

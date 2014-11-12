@@ -1,3 +1,5 @@
+#define DEBUG (1)
+
 #include "event_lea.h"
 #include <features.h>
 #include <unistd.h>
@@ -16,7 +18,7 @@
 
 #define DEFAULT_HEADER_BUFFER_SIZE (16384)
 #define DEFAULT_UPSTREAM_BUFFER_SIZE (16384)
-#define HTTP_PARSE_HEADER_DONE 1
+#define HTTP_PARSE_HEADER_DONE (1)
 typedef struct string {
     int length;
     char *data;
@@ -208,6 +210,7 @@ connection_t *proxy_connect_backend(proxy_t *, conf_t *);
 int proxy_connect(http_t *, connection_t *);
 int proxy_send_to_upstream(connection_t *conn, request_t *req);
 lt_chain_t *construct_chains(request_t *req);
+char *proxy_get_upstream_addr();
 
 #define L_PROXY_CONNECTED (-1)
 #define L_PROXY_CONNECTING (-2)
