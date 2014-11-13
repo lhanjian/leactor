@@ -221,4 +221,5 @@ char *proxy_get_upstream_addr();
 #define L_PROXY_WAITING_RESPONSE (-4)
 #define L_PROXY_WRITING (-5)
 #define L_PROXY_ERROR (-6)
-#define L_PROXY_SENDING_RESPONSE_TO_CLIENT (-4)
+#define L_PROXY_SENDING_RESPONSE_TO_CLIENT (-7)
+#define L_PROXY_CLOSING (-8)

@@ -118,8 +118,11 @@ int proxy_data_coming(event_t *ev, void *arg)
     connection_t *conn = (connection_t *)arg;
     int rv = lt_recv(conn->proxy_fd, conn->proxy_buf);
     if (rv == LAGAIN) {
+        conn->proxy_status = L_PROXY_WAITING_RESPONSE;
     } else if (rv == LCLOSE) {
+        conn->proxy_status = L_PROXY_CLOSING;
     } else if (rv == LERROR) {
+        conn->proxy_status = L_PROXY_ERROR;
     }
 
     if (conn->proxy_status == L_PROXY_WAITING_RESPONSE) {
@@ -154,7 +157,13 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
             proxy_conn->status = L_PROXY_WRITING;
             break;
         case LERROR:
+            proxy_conn->status = L_PROXY_ERROR;
+            debug_print("%s", "ERROR\n");
+            break;
         case LCLOSE:
+            proxy_conn->status = L_PROXY_CLOSING;
+            //connection_closed
+            break;
         default:
             proxy_conn->status = L_PROXY_ERROR;
             debug_print("%s", "ERROR\n");

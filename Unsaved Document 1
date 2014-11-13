@@ -125,3 +125,7 @@ directory and inode objects. With vfs_cache_pressure=1000, it will look for
 ten times more freeable objects than there are.
 
 一回accept一堆，还是一个？
+
+
+HTTP-Version SP  Status-Code SP Reason-Phrase SP CRLF
+HTTP/1.1     SP  200         SP OK            SP CRLF
