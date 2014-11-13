@@ -259,6 +259,9 @@ int http_process_element(request_t *req, lt_http_header_element_t *element)
 /*//hashed in request_header_parse
     unsigned hash = BKDRhash(element->lowcase_key.data, element->lowcase_key.length);
     */
+
+    element->length = req->header_length;
+
     if (element->hash == HostHash) {//TODO use hash-find?
         http_process_host(req, &element->value/*, 28*/);
         if (http_find_host(req)) {
@@ -492,3 +495,65 @@ int http_send_to_client(connection_t *conn, request_t *req)
     return 0;
 }
 //TODO:key-value pair
+
+
+lt_chain_t *construct_chains(request_t *req)
+{
+    lt_new_memory_pool_manager(&req->chain_pool_manager);
+    req->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &req->chain_pool_manager, NULL);
+/*
+    lt_chain_t *chain_request_line = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    chain_request_line->buf.iov_base = req->request_start;
+    chain_request_line->buf.iov_len = req->request_length;
+    */
+
+
+//    lt_chain_t *old_chain = chain_request_line;
+
+    lt_chain_t *method_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    method_chain->buf.iov_base = req->method_name.data;//method
+    method_chain->buf.iov_len = req->method_name.length + 1;//" "
+    //chain_request_line->next = method_chain;
+    ////chain_request_header_field;
+    //chain_request_header_field;
+
+    lt_chain_t *chain_uri = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    method_chain->next = chain_uri;
+    chain_uri->buf.iov_base = req->uri.data;//uri
+    chain_uri->buf.iov_len = req->uri.length + 1;//" "
+
+    lt_chain_t *http_version = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    chain_uri->next = http_version;
+    http_version->buf.iov_base = req->http_protocol.data;
+    http_version->buf.iov_len = req->http_protocol.length + 2;//"\r\n"
+
+    lt_chain_t *chain_request_header_field = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    http_version->next = chain_request_header_field;
+
+    lt_chain_t *new_chain;
+    lt_http_header_element_t *element = req->element_head;
+    for (;;) {
+        //insert(old_chain, &chain_request_header_field, element);
+        //old_chain->next = insertion_chain; //old后插
+        //element->value/key //修改element
+        //insertion_chain->next = chain_request_header_field; //chain前插
+        //
+        //
+        chain_request_header_field->buf.iov_base = element->value.data;
+        chain_request_header_field->buf.iov_len = element->value.length;
+        chain_request_header_field->next = NULL;
+
+        if (element == req->element_tail) {
+            break;
+        }
+
+        element = element->next;
+        new_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+        //old_chain = chain_request_header_field;
+        chain_request_header_field->next = new_chain;
+        chain_request_header_field = new_chain;
+    }
+
+
+    return method_chain;
+}

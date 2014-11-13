@@ -84,6 +84,7 @@ typedef struct request {
 //request_line
     struct string request_line;
     int request_length;
+    int line_length;
     char *request_start;//request line start
     char *request_end;//request line end
 //request_header
@@ -96,6 +97,7 @@ typedef struct request {
     struct http_header_element *element_tail;
 //request_header_part
     int header_hash;
+    int header_length;
     int lowcase_index;
     int invalid_header; 
     int http_major;
@@ -191,6 +193,7 @@ int http_process_request_line(connection_t *, void *arg);
 
 typedef struct http_header_element {
     int hash;
+    int length;
     struct string key;
     struct string value;
     struct string lowcase_key;

@@ -807,6 +807,7 @@ done:
 
     if (r->request_end == NULL) {
         r->request_end = p;
+//        r->line_length = r->request_end - r->request_start + 2;
     }
 
     r->http_version = r->http_major * 1000 + r->http_minor;
@@ -1075,6 +1076,7 @@ done:
     b->pos = p + 1;
     r->state = sw_start;
     r->header_hash = hash;
+    r->header_length = r->header_end - r->header_name_start + 2;//"\r\r"
     r->lowcase_index = i;
 
     return LOK;
