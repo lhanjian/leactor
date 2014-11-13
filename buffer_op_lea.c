@@ -83,6 +83,7 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
                 lt_new_post_callback(base, resend_chains, out_chain);
                 return LAGAIN;
             default:
+                perror("writev");
                 return LERROR;
                 break;
         }
