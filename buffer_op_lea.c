@@ -72,7 +72,6 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
         chain_len++;
     }
-
     struct iovec out_vec[chain_len];
 
     ssize_t rv = writev(fd, out_vec, chain_len);
@@ -83,12 +82,17 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
                 lt_new_post_callback(base, resend_chains, out_chain);
                 return LAGAIN;
             default:
-                perror("writev");
+                perror("writev:");
                 return LERROR;
                 break;
         }
     }
+
+    if (rv == 0) {
+        return LCLOSE;
+    }
     
+    //rv > 0
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) {
         int iov_len = cur->buf.iov_len;
         if (rv > iov_len) {

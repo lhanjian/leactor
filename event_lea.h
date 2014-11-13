@@ -56,6 +56,7 @@ typedef struct lt_chain {
 //    struct lt_buffer *buf;
     struct iovec buf;
     struct lt_chain *next;
+    int chain_len;
 } lt_chain_t;
 //#define 
 //static funtion didn't dispatch return value;

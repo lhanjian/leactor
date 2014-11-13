@@ -499,6 +499,8 @@ int http_send_to_client(connection_t *conn, request_t *req)
 
 lt_chain_t *construct_chains(request_t *req)
 {
+    int chain_len = 0;
+
     lt_new_memory_pool_manager(&req->chain_pool_manager);
     req->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &req->chain_pool_manager, NULL);
 /*
@@ -513,6 +515,7 @@ lt_chain_t *construct_chains(request_t *req)
     lt_chain_t *method_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
     method_chain->buf.iov_base = req->method_name.data;//method
     method_chain->buf.iov_len = req->method_name.length + 1;//" "
+    chain_len++;
     //chain_request_line->next = method_chain;
     ////chain_request_header_field;
     //chain_request_header_field;
@@ -521,17 +524,21 @@ lt_chain_t *construct_chains(request_t *req)
     method_chain->next = chain_uri;
     chain_uri->buf.iov_base = req->uri.data;//uri
     chain_uri->buf.iov_len = req->uri.length + 1;//" "
+    chain_len++;
 
     lt_chain_t *http_version = lt_alloc(req->chain_pool, &req->chain_pool_manager);
     chain_uri->next = http_version;
     http_version->buf.iov_base = req->http_protocol.data;
     http_version->buf.iov_len = req->http_protocol.length + 2;//"\r\n"
+    chain_len++;
 
     lt_chain_t *chain_request_header_field = lt_alloc(req->chain_pool, &req->chain_pool_manager);
     http_version->next = chain_request_header_field;
+    chain_len++;
 
     lt_chain_t *new_chain;
     lt_http_header_element_t *element = req->element_head;
+    
     for (;;) {
         //insert(old_chain, &chain_request_header_field, element);
         //old_chain->next = insertion_chain; //old后插
@@ -549,11 +556,13 @@ lt_chain_t *construct_chains(request_t *req)
 
         element = element->next;
         new_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+        chain_len++;
         //old_chain = chain_request_header_field;
         chain_request_header_field->next = new_chain;
         chain_request_header_field = new_chain;
     }
 
+    method_chain->chain_len = chain_len;
 
     return method_chain;
 }
