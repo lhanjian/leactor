@@ -114,10 +114,17 @@ typedef struct request {
     struct lt_memory_pool  chain_pool_manager;
 } request_t;
 
+typedef struct status {
+    int http_version;
+    int code;
+    int count;
+    char *start;
+    char *end;
+} http_status_t;
 
 typedef struct connection {
     int fd;
-    int proxy_fd;
+//    int proxy_fd;
     struct sockaddr peer_addr;
     struct sockaddr_in peer_addr_in;
     char *peer_addr_c;
@@ -143,7 +150,7 @@ typedef struct connection {
     struct lt_memory_pool *buf_pool_manager;//copy from proxy_t/listen_t
 
     int status;
-    int proxy_status;
+//    int proxy_status;
 
     struct connection *next;
     struct connection *pair;
@@ -217,8 +224,9 @@ char *proxy_get_upstream_addr();
 
 #define L_PROXY_CONNECTED (-1)
 #define L_PROXY_CONNECTING (-2)
-#define LACCEPTED (-3)//CONNECTED is equal to ACCEPTED
+#define L_CONNECTING_ACCEPTED (-3)//CONNECTED is equal to ACCEPTED
 #define L_PROXY_WAITING_RESPONSE (-4)
+#define L_HTTP_WAITING_RESPONSE (-4)
 #define L_PROXY_WRITING (-5)
 #define L_PROXY_ERROR (-6)
 #define L_PROXY_SENDING_RESPONSE_TO_CLIENT (-7)

@@ -116,21 +116,22 @@ int proxy_connect(http_t *http, connection_t *conn)
 int proxy_data_coming(event_t *ev, void *arg)
 {
     connection_t *conn = (connection_t *)arg;
-    int rv = lt_recv(conn->proxy_fd, conn->proxy_buf);
+    int rv = lt_recv(conn->fd, conn->buf);
     if (rv == LAGAIN) {
-        conn->proxy_status = L_PROXY_WAITING_RESPONSE;
+        conn->status = L_PROXY_WAITING_RESPONSE;
     } else if (rv == LCLOSE) {
-        conn->proxy_status = L_PROXY_CLOSING;
+        conn->status = L_PROXY_CLOSING;
     } else if (rv == LERROR) {
-        conn->proxy_status = L_PROXY_ERROR;
+        conn->status = L_PROXY_ERROR;
     }
 
-    if (conn->proxy_status == L_PROXY_WAITING_RESPONSE) {
+    if (conn->status == L_PROXY_WAITING_RESPONSE) {
         request_t *req = http_create_request(conn);
-        http_process_request_line(conn, req);
 
-        conn->handler = http_process_request_line;
-        conn->handler_arg = req;
+        //send_chains(ev->base, conn->pair->fd, &chain);
+//        http_process_response_line(conn, req);
+//        http_process_request_line(conn, req);
+
         return 0;
     } else {
         conn->handler(conn, conn->handler_arg);
@@ -150,6 +151,7 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
     int rv = send_chains(base, proxy_fd, send_chain);
     switch (rv) {
         case LOK:
+            proxy_conn->status = L_HTTP_ACCEPTED;
             proxy_conn->status = L_PROXY_WAITING_RESPONSE;
             //http_finish_request
             break;
@@ -169,7 +171,7 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
             debug_print("%s", "ERROR\n");
     }
 
-    lt_io_mod(base, conn->ev, LV_FDRD|LV_CONN, proxy_data_coming, conn->pair, NO_TIMEOUT);
+    lt_io_mod(base, conn->ev, LV_FDRD|LV_CONN, proxy_data_coming, proxy_conn, NO_TIMEOUT);
 /*
     lt_io_add(conn->ev->base, proxy_fd, LV_CONN|LV_FDRD, 
             proxy_data_coming, proxy_conn, NO_TIMEOUT);

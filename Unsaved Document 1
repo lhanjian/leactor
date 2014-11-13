@@ -129,3 +129,10 @@ ten times more freeable objects than there are.
 
 HTTP-Version SP  Status-Code SP Reason-Phrase SP CRLF
 HTTP/1.1     SP  200         SP OK            SP CRLF
+
+
+
+Server BWS -> nginx
+Date Upstream -> reverseProxy
+
+

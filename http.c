@@ -330,7 +330,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             req->request_length += req->header_in->pos - req->header_name_start;
             debug_print("%s", "DONE\n");
 
-            if (conn->proxy_status == L_PROXY_SENDING_RESPONSE_TO_CLIENT) {
+            if (conn->pair->status == L_PROXY_SENDING_RESPONSE_TO_CLIENT) {
 
             }
 
@@ -373,7 +373,8 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting
     }
 
-    lt_buffer_t *buf = conn->buf;//?conn->buf:NULL;
+    lt_buffer_t *buf = lt_alloc(conn->buf_pool, conn->buf_pool_manager);//conn->buf;//?conn->buf:NULL;
+    //TODO:pipeline Coming
 /*    if (conn->buf) {
         buf = conn->buf;
     } else {
@@ -391,14 +392,15 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting 
     }
 
-    if (conn->status == LACCEPTED ) { //New connection
+    if (conn->status == L_CONNECTING_ACCEPTED) { //New connection
         request_t *req = http_create_request(conn);
         http_process_request_line(conn, req);
 
-        conn->handler = http_process_request_line;
-        conn->handler_arg = req;
+/*        conn->handler = http_process_request_line;
+        conn->handler_arg = req;*/
         return 0;
     } else {//state machine???
+        //if waiting remaining part of packet???
         conn->handler(conn, conn->handler_arg);
     }
 //    ev->callback = http_process_request_line;
@@ -416,12 +418,12 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->fd = fd;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
 
-    conn->buf = lt_new_buffer_chain(http->listen.buf_pool, //when to release TODO
-            &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
+   /* conn->buf = lt_new_buffer_chain(http->listen.buf_pool, //when to release TODO
+            &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);*/
 
     conn->buf_pool_manager = &http->listen.buf_pool_manager;
     conn->buf_pool = http->listen.buf_pool;
-    conn->status = LACCEPTED;
+    conn->status = L_CONNECTING_ACCEPTED;
 
     lt_new_memory_pool_manager(&conn->request_pool_manager);
     conn->request_pool = lt_new_memory_pool(sizeof(request_t), 

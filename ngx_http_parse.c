@@ -282,7 +282,7 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
                 break;
             }
 
-            c = (u_char) (ch | 0x20);
+            c = (ch | 0x20);
             if (c >= 'a' && c <= 'z') {
                 r->schema_start = p;
                 state = sw_schema;
@@ -299,7 +299,7 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
 
         case sw_schema:
 
-            c = (u_char) (ch | 0x20);
+            c = (ch | 0x20);
             if (c >= 'a' && c <= 'z') {
                 break;
             }
@@ -349,7 +349,7 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
 
         case sw_host:
 
-            c = (u_char) (ch | 0x20);
+            c = (ch | 0x20);
             if (c >= 'a' && c <= 'z') {
                 break;
             }
@@ -392,7 +392,7 @@ ngx_http_parse_request_line(request_t *r, lt_buffer_t *b)
                 break;
             }
 
-            c = (u_char) (ch | 0x20);
+            c = (ch | 0x20);
             if (c >= 'a' && c <= 'z') {
                 break;
             }
@@ -1092,14 +1092,17 @@ header_done:
 #define NGX_ERROR LERROR
 #define NGX_AGAIN LAGAIN
 #define NGX_OK    LOK
+#define CR        '\r'
+#define LF        '\n'
 
-typedef unsigned char u_char;
+//typedef char u_char;
+
 int
 ngx_http_parse_status_line(request_t *r, lt_buffer_t *b,
     http_status_t *status)
 {
-    u_char   ch;
-    u_char  *p;
+    char   ch;
+    char  *p;
     enum {
         sw_start = 0,
         sw_H,

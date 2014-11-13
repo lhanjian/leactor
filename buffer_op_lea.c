@@ -74,7 +74,7 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
     }
     */
     struct iovec out_vec[chain_len];
-    lt_chain_t *cur_chain;
+    lt_chain_t *cur_chain = out_chain;
     for (int i = 0; i < chain_len; i++) {
         out_vec[i] = cur_chain->buf;
         cur_chain = cur_chain->next;
