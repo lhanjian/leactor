@@ -544,8 +544,6 @@ lt_chain_t *construct_chains(request_t *req)
         //old_chain->next = insertion_chain; //old后插
         //element->value/key //修改element
         //insertion_chain->next = chain_request_header_field; //chain前插
-        //
-        //
         chain_request_header_field->buf.iov_base = element->value.data;
         chain_request_header_field->buf.iov_len = element->value.length;
         chain_request_header_field->next = NULL;

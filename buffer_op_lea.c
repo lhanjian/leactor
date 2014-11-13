@@ -66,13 +66,19 @@ int resend_chains(event_t *ev, void *arg)
 
 int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
 {
-    int chain_len = 0;
+    int chain_len = out_chain->chain_len;
     //lt_chain_t *rv_chain;
-
+/*
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
         chain_len++;
     }
+    */
     struct iovec out_vec[chain_len];
+    lt_chain_t *cur_chain;
+    for (int i = 0; i < chain_len; i++) {
+        out_vec[i] = cur_chain->buf;
+        cur_chain = cur_chain->next;
+    }
 
     ssize_t rv = writev(fd, out_vec, chain_len);
     if (rv == -1) {
