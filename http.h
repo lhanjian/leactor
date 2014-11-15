@@ -53,6 +53,14 @@ typedef struct conf {
 struct upstream {
 } upstream_t;
 
+typedef struct status {
+    int http_version;
+    int code;
+    int count;
+    char *start;
+    char *end;
+} http_status_t;
+
 typedef struct request {
     lt_buffer_t *header_in;//parse pos
     int state;
@@ -81,6 +89,7 @@ typedef struct request {
     int quoted_uri;
     int plus_in_uri;
     int space_in_uri;
+//    int response_code;
 //request_line
     struct string request_line;
     int request_length;
@@ -106,6 +115,7 @@ typedef struct request {
     char lowcase_header[32];
 
     struct upstream *upstream;
+    struct status status;
 
     struct lt_memory_pool *header_pool;
     struct lt_memory_pool  header_pool_manager;
@@ -114,13 +124,6 @@ typedef struct request {
     struct lt_memory_pool  chain_pool_manager;
 } request_t;
 
-typedef struct status {
-    int http_version;
-    int code;
-    int count;
-    char *start;
-    char *end;
-} http_status_t;
 
 typedef struct connection {
     int fd;
@@ -168,6 +171,7 @@ typedef struct listening {
     int fd;
 //    struct addrinfo local_addr;
     char *bind_addr;
+
     char *bind_port;
     struct sockaddr saddr;
 
@@ -197,6 +201,7 @@ http_t *http_master_new(base_t *, conf_t *);
 http_t *http_worker_new(base_t *, conf_t *);
 request_t *http_create_request(connection_t *);
 int http_process_request_line(connection_t *, void *arg);
+int http_process_response_line(connection_t *, void *arg);
 
 typedef struct http_header_element {
     int hash;
@@ -219,8 +224,10 @@ proxy_t *proxy_worker_new(base_t *, conf_t *);
 connection_t *proxy_connect_backend(proxy_t *, conf_t *);
 int proxy_connect(http_t *, connection_t *);
 int proxy_send_to_upstream(connection_t *conn, request_t *req);
-lt_chain_t *construct_chains(request_t *req);
+lt_chain_t *construct_request_chains(request_t *req);
+lt_chain_t *construct_response_chains(request_t *rep);
 char *proxy_get_upstream_addr();
+int http_send_to_client(connection_t *, request_t *);
 
 #define L_PROXY_CONNECTED (-1)
 #define L_PROXY_CONNECTING (-2)
@@ -228,6 +235,10 @@ char *proxy_get_upstream_addr();
 #define L_PROXY_WAITING_RESPONSE (-4)
 #define L_HTTP_WAITING_RESPONSE (-4)
 #define L_PROXY_WRITING (-5)
+#define L_HTTP_WRITING_RESPONSE (-5)
 #define L_PROXY_ERROR (-6)
+#define L_HTTP_ERROR (-6)
 #define L_PROXY_SENDING_RESPONSE_TO_CLIENT (-7)
 #define L_PROXY_CLOSING (-8)
+#define L_HTTP_CLOSING (-8)
+#define L_HTTP_WROTE_RESPONSE_HEADER (-9)

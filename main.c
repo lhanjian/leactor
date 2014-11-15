@@ -24,7 +24,7 @@ int main()
             exit(EXIT_FAILURE);
             break;
         case 0:
-            sleep(15);
+            sleep(5);
             child(conf);
             exit(EXIT_SUCCESS);
         default:

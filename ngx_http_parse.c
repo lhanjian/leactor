@@ -1101,8 +1101,8 @@ int
 ngx_http_parse_status_line(request_t *r, lt_buffer_t *b,
     http_status_t *status)
 {
-    char   ch;
-    char  *p;
+    char ch;
+    char *p;
     enum {
         sw_start = 0,
         sw_H,
@@ -1130,7 +1130,9 @@ ngx_http_parse_status_line(request_t *r, lt_buffer_t *b,
         case sw_start:
             switch (ch) {
             case 'H':
-                state = sw_H;
+                r->request_start = p;
+                r->http_protocol.data = p;
+                state = sw_H;//tag
                 break;
             default:
                 return NGX_ERROR;
@@ -1215,6 +1217,7 @@ ngx_http_parse_status_line(request_t *r, lt_buffer_t *b,
         case sw_minor_digit:
             if (ch == ' ') {
                 state = sw_status;
+                r->http_protocol_end = p - 1;
                 break;
             }
 
@@ -1300,6 +1303,7 @@ done:
         status->end = p;
     }
 
+//    r->http_version = r->http_major * 1000 + r->http_minor;
     status->http_version = r->http_major * 1000 + r->http_minor;
     r->state = sw_start;
 

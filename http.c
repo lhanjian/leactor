@@ -189,6 +189,10 @@ int http_read_request_header(request_t *req)
 
 }
 */
+int http_status_line_parsed(request_t *req, int rv)
+{
+    return 0;
+}
 int http_request_line_parsed(request_t *req, int rv)
 {
     req->request_line.length = req->request_end - req->request_start;
@@ -198,9 +202,7 @@ int http_request_line_parsed(request_t *req, int rv)
     req->method_name.length = req->method_end - req->request_start + 1;
     req->method_name.data = req->request_line.data;
 
-    if (req->http_protocol.data) {
-        req->http_protocol.length = req->request_end - req->http_protocol.data;
-    }
+    req->http_protocol.length = req->request_end - req->http_protocol.data;
 
     //process_request_uri
     if (req->args_start) {
@@ -286,12 +288,14 @@ int http_process_request_headers(connection_t *conn, void *arg)
     for (;;) {
         if (rc == LAGAIN) {
             if (req->header_in->pos == req->header_in->end) {
-            //TODO
+            //TODO:we have toooooooo big header
             }
-//            ssize_t n = http_read_request_header(req);
+            //TEMP: 单纯抛弃
+            //TODO: 挂上IO等可读
+            //ssize_t n = http_read_request_header(req);
         }
 
-        rc = ngx_http_parse_header_line(req, req->header_in, 0/*TODO?*/);
+        rc = ngx_http_parse_header_line(req, req->header_in, 1/*TODO?*/);
 
         if (rc == LOK) {
             req->request_length += req->header_in->pos - req->header_name_start;
@@ -327,20 +331,44 @@ int http_process_request_headers(connection_t *conn, void *arg)
         }
         //MUST BE COMPLETED
         if (rc == HTTP_PARSE_HEADER_DONE) {
+            /*
             req->request_length += req->header_in->pos - req->header_name_start;
             debug_print("%s", "DONE\n");
-
             if (conn->pair->status == L_PROXY_SENDING_RESPONSE_TO_CLIENT) {
 
             }
-
+            */
             //if (conn->status == L_PROXY_SENDING_
-            proxy_send_to_upstream(conn, req);//NEXT
-            return 0;
+            return LOK;
 //            req->http_state = HTTP_PROCE
 //            rc = lt_recv(ev->fd, <#lt_buffer_t *#>, <#size_t#>)
 //            http_validation_host(req);
         }
+    }
+    return 0;
+}
+
+
+int http_process_response_line(connection_t *conn, void *arg)
+{
+    request_t *req = (request_t *)arg;
+
+    int rv = ngx_http_parse_status_line(req, conn->buf, &req->status);
+
+    if (rv == LOK) {
+        req->request_line.data = req->request_start;
+        req->request_line.length = req->status.end - req->status.start;
+
+        req->http_protocol.length = req->http_protocol_end - req->http_protocol.data;
+        
+        int rc = http_process_request_headers(conn, arg);
+        if (rc == LOK) {
+            connection_t *client_conn = conn->pair;
+            http_send_to_client(client_conn, req);
+        }
+        //req->request_line.length = 
+        //HTTP_VERSION:TODO
+
     }
     return 0;
 }
@@ -353,13 +381,17 @@ int http_process_request_line(connection_t *conn, void *arg)
     int rv = ngx_http_parse_request_line(req, req->header_in);
 
     if (rv == LOK) {
+        //HTTP_VERSION:TODO
         http_request_line_parsed(req, rv);
 /*      event->callback = http_process_request_headers;
         event->arg = req; */
         conn->handler = http_process_request_headers;
         conn->handler_arg = req;//state changed
 
-        http_process_request_headers(conn, req);
+        int rc = http_process_request_headers(conn, req);
+        if (rc == LOK) {
+            proxy_send_to_upstream(conn, req);
+        }
     }
 
     return 0;
@@ -373,13 +405,15 @@ int http_data_coming(event_t *ev, void *arg)
         //http_close_connecting
     }
 
-    lt_buffer_t *buf = lt_alloc(conn->buf_pool, conn->buf_pool_manager);//conn->buf;//?conn->buf:NULL;
+//    conn->buf = //lt_alloc(conn->buf_pool, conn->buf_pool_manager);//conn->buf;//?conn->buf:NULL;
+    conn->buf = lt_new_buffer_chain(conn->buf_pool, //when to release TODO
+            conn->buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
     //TODO:pipeline Coming
 /*    if (conn->buf) {
         buf = conn->buf;
     } else {
     }*/
-    int rv = lt_recv(conn->fd, buf);
+    int rv = lt_recv(conn->fd, conn->buf);
     if (rv == LAGAIN) {
 //        set_http_data_coming_timer();
 //        conn->status = EFAULT;
@@ -387,6 +421,7 @@ int http_data_coming(event_t *ev, void *arg)
 //        return 0;
 //
     } else if (rv == LCLOSE) {
+        debug_print("%s", "HTTP CLIENT FD CLOSED\n");
         //http_close_connecting
     } else if (rv == LERROR) {
         //http_close_connecting 
@@ -396,6 +431,7 @@ int http_data_coming(event_t *ev, void *arg)
         request_t *req = http_create_request(conn);
         http_process_request_line(conn, req);
 
+        //proxy_send_to_upstream(conn, req);//NEXT
 /*        conn->handler = http_process_request_line;
         conn->handler_arg = req;*/
         return 0;
@@ -492,14 +528,32 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 
 int http_send_to_client(connection_t *conn, request_t *req)
 {
-    lt_chain_t *out_chain = construct_chains(req);
-    send_chains(conn->ev->base, conn->fd, out_chain);
+    lt_chain_t *out_chain = construct_response_chains(req);
+
+    int rv = send_chains(conn->ev->base, conn->fd, out_chain);
+    switch (rv) {
+        case LOK:
+            conn->status = L_HTTP_WROTE_RESPONSE_HEADER;
+            break;
+        case LAGAIN:
+            conn->status = L_HTTP_WRITING_RESPONSE;
+            break;
+        case LCLOSE:
+            conn->status = L_HTTP_CLOSING;
+            break;
+        case LERROR:
+        default:
+            conn->status = L_HTTP_ERROR;
+            debug_print("%s", "ERROR\n");
+    }
+            
     return 0;
 }
 //TODO:key-value pair
 
 
-lt_chain_t *construct_chains(request_t *req)
+
+lt_chain_t *construct_request_chains(request_t *req)
 {
     int chain_len = 0;
 
@@ -510,8 +564,6 @@ lt_chain_t *construct_chains(request_t *req)
     chain_request_line->buf.iov_base = req->request_start;
     chain_request_line->buf.iov_len = req->request_length;
     */
-
-
 //    lt_chain_t *old_chain = chain_request_line;
 
     lt_chain_t *method_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
@@ -546,19 +598,26 @@ lt_chain_t *construct_chains(request_t *req)
         //old_chain->next = insertion_chain; //old后插
         //element->value/key //修改element
         //insertion_chain->next = chain_request_header_field; //chain前插
-        chain_request_header_field->buf.iov_base = element->value.data;
-        chain_request_header_field->buf.iov_len = element->value.length;
-        chain_request_header_field->next = NULL;
+
+        chain_request_header_field->buf.iov_base = element->key.data;
+        chain_request_header_field->buf.iov_len = element->key.length + 2;
+//        chain_request_header_field->next = NULL;
+        chain_request_header_field->next = 
+            lt_alloc(req->chain_pool, &req->chain_pool_manager);
+        chain_request_header_field->next->buf.iov_base = element->value.data;
+        chain_request_header_field->next->buf.iov_len = element->value.length + 2;
 
         if (element == req->element_tail) {
+            chain_request_header_field->next->buf.iov_len += 2;
             break;
         }
 
         element = element->next;
         new_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
         chain_len++;
+        chain_len++;
         //old_chain = chain_request_header_field;
-        chain_request_header_field->next = new_chain;
+        chain_request_header_field->next->next = new_chain;
         chain_request_header_field = new_chain;
     }
 

@@ -66,7 +66,7 @@ int resend_chains(event_t *ev, void *arg)
 
 int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
 {
-    int chain_len = out_chain->chain_len;
+    int chain_len = out_chain->chain_len + 1;
     //lt_chain_t *rv_chain;
 /*
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
@@ -79,6 +79,7 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
         out_vec[i] = cur_chain->buf;
         cur_chain = cur_chain->next;
     }
+//    chain_len++;
 
     ssize_t rv = writev(fd, out_vec, chain_len);
     if (rv == -1) {
@@ -99,7 +100,9 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
     }
     
     //rv > 0
-    for (lt_chain_t *cur = out_chain; cur; cur = cur->next) {
+    for (lt_chain_t *cur = out_chain; 
+            cur; //LOK
+            cur = cur->next) {
         int iov_len = cur->buf.iov_len;
         if (rv > iov_len) {
             cur->buf.iov_len -= iov_len;
@@ -245,9 +248,9 @@ ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
 ssize_t
 lt_recv(int fd, lt_buffer_t *lt_buf)
 {
+    ssize_t recv_len = 0;
     for (;;) {
         ssize_t length = lt_buf->end - lt_buf->last;
-        ssize_t recv_len = 0;
         ssize_t n = recv(fd, lt_buf->last, length, 0/*TODO: recv TWICE*/);
 
         if (n == 0) {
@@ -290,16 +293,15 @@ lt_accept(int fd, struct sockaddr *peer)
     int conn_fd = accept4(fd, peer, &socklen, SOCK_NONBLOCK);
     if (conn_fd == -1) {
         int err = errno;
-        perror("accept4");
         switch(err) { 
             case EAGAIN:
                 return LAGAIN;//complete?
             case ECONNABORTED:
+                perror("accept4:ECONNABORTED");
                 return LABORT;//continue
             case EMFILE:
             case ENFILE:
-                perror("file descriptor Crashed"); 
-                return LERROR;//FILE D
+                perror("accept4:file descriptor Crashed"); 
             default:
                 fprintf(stderr, "unknown accept4 error\n"); 
                 return LERROR;

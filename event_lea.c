@@ -172,6 +172,8 @@ lt_io_mod(base_t *base, event_t *ev, flag_t new_flag_set,//自行获取原有的
         } 
 
         ev->flag = new_flag_set;
+        ev->callback = callback;
+        ev->arg = arg;
 
         lt_mod_to_epfd(base->epfd, ev, ev->fd, new_flag_set);
     }

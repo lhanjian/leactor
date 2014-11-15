@@ -1,6 +1,5 @@
 #include "http.h"
 #include "ngx_http_parse.h"
-
 //static proxy_t *proxy_single;
 
 int proxy_connect_writable(event_t *ev, void *arg)
@@ -60,6 +59,27 @@ connection_t *proxy_connect_backend(proxy_t *proxy, conf_t *conf)
     return NULL;
 }
 */
+/*
+int proxy_process_header(request_t *req)
+{
+    int rc;
+    for (;;) {
+        if (req->header_in->pos == req->header_in->end) {
+            
+        }
+
+        if (rc == LAGAIN) {
+        }
+//        int rc = ngx_htt
+        rc = ngx_http_parse_header_line(req, req->header_in, 1);
+        if (rc == LOK) {
+
+
+        }
+    }
+    return 0;
+}
+*/
 
 char *proxy_get_upstream_addr()//TODO
 {
@@ -83,7 +103,6 @@ int proxy_connect(http_t *http, connection_t *conn)
     conn->pair->request_pool = conn->request_pool;
     conn->pair->request_pool_manager = conn->request_pool_manager;
         
-
     conn->pair->pair = conn;
 
     conn->pair->fd = socket(conn->peer_addr_in.sin_family, 
@@ -107,16 +126,18 @@ int proxy_connect(http_t *http, connection_t *conn)
         return LOK;
         //SUCCESS
     } else {
+        return LERROR;
         perror("connect:");
     }
 
-    return 0;
+    return LERROR;
 }
 
 int proxy_data_coming(event_t *ev, void *arg)
 {
     connection_t *conn = (connection_t *)arg;
-    int rv = lt_recv(conn->fd, conn->buf);
+    conn->buf = lt_new_buffer_chain(conn->buf_pool, conn->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);
+    int rv = lt_recv(conn->fd, conn->buf);//nginx just recv a part
     if (rv == LAGAIN) {
         conn->status = L_PROXY_WAITING_RESPONSE;
     } else if (rv == LCLOSE) {
@@ -127,7 +148,9 @@ int proxy_data_coming(event_t *ev, void *arg)
 
     if (conn->status == L_PROXY_WAITING_RESPONSE) {
         request_t *req = http_create_request(conn);
+        http_process_response_line(conn, req);
 
+        debug_print("%s", "SUCCESS parse response\n");
         //send_chains(ev->base, conn->pair->fd, &chain);
 //        http_process_response_line(conn, req);
 //        http_process_request_line(conn, req);
@@ -142,16 +165,18 @@ int proxy_data_coming(event_t *ev, void *arg)
 
 int proxy_send_to_upstream(connection_t *conn, request_t *req)
 {
+    connection_t *proxy_conn = conn->pair;
+    connection_t *client_conn = conn;
+
     int proxy_fd = conn->pair->fd;//= proxy_single->conn[conn->]->fd;
     base_t *base = conn->ev->base;
-    connection_t *proxy_conn = conn->pair;
 
-    lt_chain_t *send_chain = construct_chains(req);
+    lt_chain_t *send_chain = construct_request_chains(req);
 
     int rv = send_chains(base, proxy_fd, send_chain);
     switch (rv) {
         case LOK:
-            proxy_conn->status = L_HTTP_ACCEPTED;
+            client_conn->status = L_HTTP_WAITING_RESPONSE;
             proxy_conn->status = L_PROXY_WAITING_RESPONSE;
             //http_finish_request
             break;
@@ -171,11 +196,42 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
             debug_print("%s", "ERROR\n");
     }
 
-    lt_io_mod(base, conn->ev, LV_FDRD|LV_CONN, proxy_data_coming, proxy_conn, NO_TIMEOUT);
+    lt_io_mod(base,              proxy_conn->ev, LV_FDRD|LV_CONN, 
+              proxy_data_coming, proxy_conn,     NO_TIMEOUT);
 /*
     lt_io_add(conn->ev->base, proxy_fd, LV_CONN|LV_FDRD, 
             proxy_data_coming, proxy_conn, NO_TIMEOUT);
             */
-
     return 0;
+}
+
+
+lt_chain_t *construct_response_chains(request_t *rep)
+{
+    lt_chain_t *out_chain;
+//    int chain_len = 0;
+
+    lt_new_memory_pool_manager(&rep->chain_pool_manager);
+    rep->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &rep->chain_pool_manager, NULL);
+/*
+    lt_chain_t *http_version = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    http_version->buf.iov_base = rep->http_protocol.data;
+    http_version->buf.iov_len = rep->http_protocol.length + 1;//' '
+    chain_len++;
+
+    lt_chain_t *status_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    http_version->next = status_chain;
+    status_chain->buf.iov_base = rep->status.start;//OPTIM TODO: struct iovec 和 string 类似
+    status_chain->buf.iov_len = rep->status.count;
+    chain_len++;
+    
+    lt_chain_t *
+    */
+    lt_chain_t *status_line = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    status_line->buf.iov_base = rep->request_line.data;
+    status_line->buf.iov_len = rep->request_line.length + 2;
+    
+
+    out_chain = status_line;
+    return out_chain;
 }
