@@ -357,19 +357,19 @@ int http_process_response_line(connection_t *conn, void *arg)
 
     if (rv == LOK) {
         req->request_line.data = req->request_start;
-        req->request_line.length = req->status.end - req->status.start;
+        req->request_line.length = req->status.end - req->request_start;
 
         req->http_protocol.length = req->http_protocol_end - req->http_protocol.data;
         
         int rc = http_process_request_headers(conn, arg);
         if (rc == LOK) {
-            connection_t *client_conn = conn->pair;
-            http_send_to_client(client_conn, req);
+            return http_send_to_client(conn, req);
         }
         //req->request_line.length = 
         //HTTP_VERSION:TODO
 
     }
+
     return 0;
 }
 
@@ -530,7 +530,9 @@ int http_send_to_client(connection_t *conn, request_t *req)
 {
     lt_chain_t *out_chain = construct_response_chains(req);
 
-    int rv = send_chains(conn->ev->base, conn->fd, out_chain);
+    connection_t *client_conn = conn->pair;
+    
+    int rv = send_chains(conn->ev->base, client_conn->fd, out_chain);
     switch (rv) {
         case LOK:
             conn->status = L_HTTP_WROTE_RESPONSE_HEADER;
@@ -555,7 +557,6 @@ int http_send_to_client(connection_t *conn, request_t *req)
 
 lt_chain_t *construct_request_chains(request_t *req)
 {
-    int chain_len = 0;
 
     lt_new_memory_pool_manager(&req->chain_pool_manager);
     req->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &req->chain_pool_manager, NULL);
@@ -565,6 +566,8 @@ lt_chain_t *construct_request_chains(request_t *req)
     chain_request_line->buf.iov_len = req->request_length;
     */
 //    lt_chain_t *old_chain = chain_request_line;
+
+    int chain_len = 0;
 
     lt_chain_t *method_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
     method_chain->buf.iov_base = req->method_name.data;//method
@@ -588,7 +591,6 @@ lt_chain_t *construct_request_chains(request_t *req)
 
     lt_chain_t *chain_request_header_field = lt_alloc(req->chain_pool, &req->chain_pool_manager);
     http_version->next = chain_request_header_field;
-    chain_len++;
 
     lt_chain_t *new_chain;
     lt_http_header_element_t *element = req->element_head;
@@ -601,11 +603,13 @@ lt_chain_t *construct_request_chains(request_t *req)
 
         chain_request_header_field->buf.iov_base = element->key.data;
         chain_request_header_field->buf.iov_len = element->key.length + 2;
+        chain_len++;
 //        chain_request_header_field->next = NULL;
         chain_request_header_field->next = 
             lt_alloc(req->chain_pool, &req->chain_pool_manager);
         chain_request_header_field->next->buf.iov_base = element->value.data;
         chain_request_header_field->next->buf.iov_len = element->value.length + 2;
+        chain_len++;
 
         if (element == req->element_tail) {
             chain_request_header_field->next->buf.iov_len += 2;
@@ -614,8 +618,6 @@ lt_chain_t *construct_request_chains(request_t *req)
 
         element = element->next;
         new_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
-        chain_len++;
-        chain_len++;
         //old_chain = chain_request_header_field;
         chain_request_header_field->next->next = new_chain;
         chain_request_header_field = new_chain;

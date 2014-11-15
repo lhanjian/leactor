@@ -66,7 +66,7 @@ int resend_chains(event_t *ev, void *arg)
 
 int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
 {
-    int chain_len = out_chain->chain_len + 1;
+    int chain_len = out_chain->chain_len;
     //lt_chain_t *rv_chain;
 /*
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
@@ -79,7 +79,6 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
         out_vec[i] = cur_chain->buf;
         cur_chain = cur_chain->next;
     }
-//    chain_len++;
 
     ssize_t rv = writev(fd, out_vec, chain_len);
     if (rv == -1) {

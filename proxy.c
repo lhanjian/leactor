@@ -157,7 +157,7 @@ int proxy_data_coming(event_t *ev, void *arg)
 
         return 0;
     } else {
-        conn->handler(conn, conn->handler_arg);
+//        conn->handler(conn, conn->handler_arg);
     }
     //send_chains(ev->base, conn->fd, <#lt_chain_t *#>)
     return 0;
@@ -208,9 +208,7 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
 
 lt_chain_t *construct_response_chains(request_t *rep)
 {
-    lt_chain_t *out_chain;
 //    int chain_len = 0;
-
     lt_new_memory_pool_manager(&rep->chain_pool_manager);
     rep->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &rep->chain_pool_manager, NULL);
 /*
@@ -230,8 +228,34 @@ lt_chain_t *construct_response_chains(request_t *rep)
     lt_chain_t *status_line = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
     status_line->buf.iov_base = rep->request_line.data;
     status_line->buf.iov_len = rep->request_line.length + 2;
-    
 
-    out_chain = status_line;
+    int chain = 1;
+
+    lt_chain_t *out_chain = status_line;
+    lt_http_header_element_t *element = rep->element_head;
+    lt_chain_t *cur_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    out_chain->next = cur_chain;
+    for (;;) {
+        cur_chain->buf.iov_base = element->key.data;
+        cur_chain->buf.iov_len = element->key.length + 2;
+        chain++;
+
+        cur_chain->next = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+        cur_chain->next->buf.iov_base = element->value.data;
+        cur_chain->next->buf.iov_len = element->value.length + 2;
+        chain++;
+
+        if (element == rep->element_tail) {
+            cur_chain->next->buf.iov_len += 2;
+            break;
+        }
+        element = element->next;
+        lt_chain_t *new_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+
+        cur_chain->next->next = new_chain;
+        cur_chain = new_chain;
+    }
+    out_chain->chain_len = chain;
+
     return out_chain;
 }
