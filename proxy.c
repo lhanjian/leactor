@@ -205,7 +205,6 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
     return 0;
 }
 
-
 lt_chain_t *construct_response_chains(request_t *rep)
 {
 //    int chain_len = 0;
@@ -255,7 +254,14 @@ lt_chain_t *construct_response_chains(request_t *rep)
         cur_chain->next->next = new_chain;
         cur_chain = new_chain;
     }
-    out_chain->chain_len = chain;
 
+    lt_chain_t *tail_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    chain++;
+    out_chain->next = tail_chain;
+    tail_chain->buf.iov_base = rep->header_end + 2;
+    tail_chain->buf.iov_len = rep->header_in->last - (rep->header_end + 2);
+    tail_chain->next = NULL;
+
+    out_chain->chain_len = chain;
     return out_chain;
 }

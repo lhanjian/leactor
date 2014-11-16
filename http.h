@@ -233,9 +233,9 @@ int http_send_to_client(connection_t *, request_t *);
 #define L_PROXY_CONNECTING (-2)
 #define L_CONNECTING_ACCEPTED (-3)//CONNECTED is equal to ACCEPTED
 #define L_PROXY_WAITING_RESPONSE (-4)
-#define L_HTTP_WAITING_RESPONSE (-4)
+#define L_HTTP_WRITING_RESPONSE_HEADER (-4)
 #define L_PROXY_WRITING (-5)
-#define L_HTTP_WRITING_RESPONSE (-5)
+#define L_HTTP_WAITING_RESPONSE (-5)
 #define L_PROXY_ERROR (-6)
 #define L_HTTP_ERROR (-6)
 #define L_PROXY_SENDING_RESPONSE_TO_CLIENT (-7)

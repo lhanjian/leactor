@@ -279,8 +279,6 @@ void timerfd_epoll_init(struct timespec timeout, base_t *base)
     return ;
 }
 
-
-
 res_t 
 lt_base_loop(base_t *base, int timeout)
 {

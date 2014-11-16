@@ -2,9 +2,7 @@
 #include <stdarg.h>
 //EVLIST_LEN
 //ToDo Optimization 8 times
-
 static void init_pool_list(lt_memory_pool_t *pool);
-
 /*typedef struct {
     size_t one_item_size;
 

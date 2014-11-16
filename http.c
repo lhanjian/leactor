@@ -526,6 +526,13 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
     return http;
 }
 
+int http_send_body_to_client(event_t *ev, void *arg)
+{
+    request_t *req = (request_t *)arg;
+    connection_t *conn = ev->arg;
+    return 0;
+}
+
 int http_send_to_client(connection_t *conn, request_t *req)
 {
     lt_chain_t *out_chain = construct_response_chains(req);
@@ -538,7 +545,7 @@ int http_send_to_client(connection_t *conn, request_t *req)
             conn->status = L_HTTP_WROTE_RESPONSE_HEADER;
             break;
         case LAGAIN:
-            conn->status = L_HTTP_WRITING_RESPONSE;
+            conn->status = L_HTTP_WRITING_RESPONSE_HEADER;
             break;
         case LCLOSE:
             conn->status = L_HTTP_CLOSING;
@@ -548,7 +555,7 @@ int http_send_to_client(connection_t *conn, request_t *req)
             conn->status = L_HTTP_ERROR;
             debug_print("%s", "ERROR\n");
     }
-            
+
     return 0;
 }
 //TODO:key-value pair
