@@ -525,14 +525,14 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
             &http->listen.buf_pool_manager, NULL);
     return http;
 }
-
+/*
 int http_send_body_to_client(event_t *ev, void *arg)
 {
     request_t *req = (request_t *)arg;
     connection_t *conn = ev->arg;
     return 0;
 }
-
+*/
 int http_send_to_client(connection_t *conn, request_t *req)
 {
     lt_chain_t *out_chain = construct_response_chains(req);
