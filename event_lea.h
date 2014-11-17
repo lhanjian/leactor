@@ -58,6 +58,11 @@ typedef struct lt_chain {
     struct lt_chain *next;
     int chain_len;
 } lt_chain_t;
+
+typedef struct lt_fd_with_chains {
+    struct lt_chain *chain;
+    int fd;
+} lt_send_t;
 //#define 
 //static funtion didn't dispatch return value;
 //reduce passing parameter;
@@ -165,7 +170,7 @@ lt_time_t lt_gettime(void);
 base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 event_t*  lt_io_mod(base_t *base, event_t *ev, flag_t flag_set, func_t callback, void *arg, to_t timeout);
-int lt_new_post_callback(base_t *, func_t, void *arg);
+int lt_new_post_callback(base_t *, func_t, int fd, void *arg);
 void      lt_io_remove(base_t *base, event_t *ev);
 res_t     lt_base_loop(base_t *base, int timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);

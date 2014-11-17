@@ -254,6 +254,7 @@ lt_chain_t *construct_response_chains(request_t *rep)
             tail_chain->buf.iov_len = rep->header_in->last - (rep->header_end + 2);
             tail_chain->next = NULL;
             out_chain->chain_len = chain;
+
             goto done;
         }
         element = element->next;
