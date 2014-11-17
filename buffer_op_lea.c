@@ -100,12 +100,13 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
     
     //rv > 0
     for (lt_chain_t *cur = out_chain; 
-            cur; //LOK
-            cur = cur->next) {
+                     cur; //LOK
+                     cur = cur->next) {
         int iov_len = cur->buf.iov_len;
         if (rv > iov_len) {
             cur->buf.iov_len -= iov_len;
             rv -= iov_len;
+            chain_len--;
             continue;
             //lt_free?not lt_Free until chains all has been seed out.
         } else {
@@ -114,9 +115,11 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
             //rv_chain = cur;
             if (rv == iov_len) {
                 rv -= iov_len;
+                chain_len--;
                 continue;
             } else /*if(rv < iov_len)*/ {
-                lt_new_post_callback(base, resend_chains, fd, out_chain);
+                cur_chain->chain_len = chain_len;
+                lt_new_post_callback(base, resend_chains, fd, cur_chain);
                 return LAGAIN;
             }
         }

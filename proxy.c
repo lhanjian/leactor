@@ -141,6 +141,7 @@ int proxy_data_coming(event_t *ev, void *arg)
     if (rv == LAGAIN) {
         conn->status = L_PROXY_WAITING_RESPONSE;
     } else if (rv == LCLOSE) {
+        debug_print("%s", "proxy FD CLOSE\n")
         conn->status = L_PROXY_CLOSING;
     } else if (rv == LERROR) {
         conn->status = L_PROXY_ERROR;

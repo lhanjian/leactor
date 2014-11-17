@@ -290,6 +290,9 @@ int http_process_request_headers(connection_t *conn, void *arg)
             if (req->header_in->pos == req->header_in->end) {
             //TODO:we have toooooooo big header
             }
+            
+            if (req->header_in->pos == req->header_in->last) {
+            }
             //TEMP: 单纯抛弃
             //TODO: 挂上IO等可读
             //ssize_t n = http_read_request_header(req);
@@ -437,7 +440,7 @@ int http_data_coming(event_t *ev, void *arg)
         return 0;
     } else {//state machine???
         //if waiting remaining part of packet???
-        conn->handler(conn, conn->handler_arg);
+//        conn->handler(conn, conn->handler_arg);
     }
 //    ev->callback = http_process_request_line;
 //    ev->arg = req;
@@ -564,7 +567,6 @@ int http_send_to_client(connection_t *conn, request_t *req)
 
 lt_chain_t *construct_request_chains(request_t *req)
 {
-
     lt_new_memory_pool_manager(&req->chain_pool_manager);
     req->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &req->chain_pool_manager, NULL);
 /*
