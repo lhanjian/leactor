@@ -407,7 +407,6 @@ int http_data_coming(event_t *ev, void *arg)
     if (conn->timeout && conn->close) {
         //http_close_connecting
     }
-
 //    conn->buf = //lt_alloc(conn->buf_pool, conn->buf_pool_manager);//conn->buf;//?conn->buf:NULL;
     conn->buf = lt_new_buffer_chain(conn->buf_pool, //when to release TODO
             conn->buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
@@ -598,12 +597,17 @@ lt_chain_t *construct_request_chains(request_t *req)
     http_version->buf.iov_len = req->http_protocol.length + 2;//"\r\n"
     chain_len++;
 
-    lt_chain_t *chain_request_header_field = lt_alloc(req->chain_pool, &req->chain_pool_manager);
-    http_version->next = chain_request_header_field;
 
     lt_chain_t *new_chain;
+
     lt_http_header_element_t *element = req->element_head;
-    
+    if (!element) {
+        //NO HTTP HEADER FIELD
+        goto done;
+    }
+
+    lt_chain_t *chain_request_header_field = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    http_version->next = chain_request_header_field;
     for (;;) {
         //insert(old_chain, &chain_request_header_field, element);
         //old_chain->next = insertion_chain; //old后插
@@ -632,7 +636,7 @@ lt_chain_t *construct_request_chains(request_t *req)
         chain_request_header_field = new_chain;
     }
 
+done:
     method_chain->chain_len = chain_len;
-
     return method_chain;
 }
