@@ -1,15 +1,19 @@
-
-
 #include "http.h"
 #include "ngx_http_parse.h"
+
 static int get_addrinfo_with_bind(http_t *http);
+static int start_accept(event_t *ev, void *arg);
 //static int http_add_listen(http_t *http, conf_t *conf);
 //static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
-static int http_accept_distributor(event_t *ev, void* http);
+//static int http_accept_distributor(event_t *ev, void* http);
 static int http_add_listen(http_t *http, conf_t *conf);
 int http_process_host(request_t *, lt_string_t * /*, 28*/);
 
 unsigned int HostHash;
+
+char *bind_addr() { char *addr = "127.0.0.1"; return addr; }
+char *bind_port() { char *port = "8080"; return port; }
+
 unsigned int BKDRhash(char *str, int length)
 {
     unsigned hash = 0;
@@ -24,7 +28,7 @@ int http_find_host(request_t *req)
 {
     return LOK;
 }
-
+/*
 http_t *http_master_new(base_t *base, conf_t *conf)
 {
     http_t *http = calloc(1, sizeof(http_t));
@@ -46,17 +50,18 @@ http_t *http_master_new(base_t *base, conf_t *conf)
     http->efd = conf->efd_distributor;
 
     http->listen.ev = lt_io_add(http->base, http->listen.fd, 
-            LV_CONN|LV_FDRD, http_accept_distributor/*TODO http_cb*/, 
-            http/*TODO http_cb_args*/, NO_TIMEOUT);
+            LV_CONN|LV_FDRD, http_accept_distributor,
+            http, NO_TIMEOUT);
     return http;
 }
+*/
 /*
 int send_to_child(int evfd)
 {
     return rv;
 }
 */
-
+/*
 int http_accept_distributor(event_t *ev, void *arg)
 {
     http_t *http = (http_t *)arg;
@@ -73,6 +78,7 @@ int http_accept_distributor(event_t *ev, void *arg)
 
     return 0;
 }
+*/
 
 int get_addrinfo_with_bind(http_t *http)
 {
@@ -104,6 +110,11 @@ int get_addrinfo_with_bind(http_t *http)
         if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, 
                     &yes, sizeof yes) == -1) {
             perror("setsockopt_REUSE_ADDR");
+            return -1;
+        }
+
+        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof yes) == -1) {
+            perror("setsockopt_REUSE_PORT");
             return -1;
         }
 
@@ -139,19 +150,25 @@ int send_listenfd_to_child(int pfd[2], int fd)
 
 int http_add_listen(http_t *http, conf_t *conf)
 {
+    http->listen.bind_addr = bind_addr();
+    http->listen.bind_port = bind_port();
+
     int rv = get_addrinfo_with_bind(http);
     if (rv) {
         fprintf(stderr, "get_addrinfo_with_bind error");
         return -1;
     }
 
-    conf->listen_fd = http->listen.fd;
+//    conf->listen_fd = http->listen.fd;
 
     rv = listen(http->listen.fd, SOMAXCONN);
     if (rv) {
         fprintf(stderr, "listen error");
         return -1;
     }
+
+    http->listen.ev = lt_io_add(http->base, http->listen.fd, 
+            LV_CONN|LV_FDRD, start_accept, http, NO_TIMEOUT);
 
     return 0;
 }
@@ -193,6 +210,7 @@ int http_status_line_parsed(request_t *req, int rv)
 {
     return 0;
 }
+
 int http_request_line_parsed(request_t *req, int rv)
 {
     req->request_line.length = req->request_end - req->request_start;
@@ -502,6 +520,7 @@ int start_accept(event_t *ev, void *arg)
     return 0;
 }
 
+
 http_t *http_worker_new(base_t *base, conf_t *conf)
 {
     http_t *http = malloc(sizeof(http_t));
@@ -518,15 +537,23 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
     HostHash = BKDRhash("Host", sizeof("Host"));
 
     http->base = base;
-    http->listen.fd = conf->listen_fd;
-    http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
-            start_accept, http, NO_TIMEOUT);
+//    http->listen.fd = conf->listen_fd;
+//    http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
+//            start_accept, http, NO_TIMEOUT);
+
+
+    int rv = http_add_listen(http, conf);
+    if (rv) {
+        free(http);
+        return NULL;
+    }
 
     lt_new_memory_pool_manager(&http->listen.buf_pool_manager);
     http->listen.buf_pool = lt_new_memory_pool(sizeof(lt_buffer_t),
             &http->listen.buf_pool_manager, NULL);
     return http;
 }
+
 /*
 int http_send_body_to_client(event_t *ev, void *arg)
 {

@@ -7,9 +7,11 @@ base_t *father(conf_t *conf);
 
 int main()
 {
+    /*
     int efd = eventfd(0, EFD_NONBLOCK);
-    conf_t *conf = malloc(sizeof(conf_t));
     conf->efd_distributor = efd;
+    */
+    conf_t *conf = malloc(sizeof(conf_t));
 /*
     if (pipe(conf->pfd)) {
         perror("pipe");
@@ -17,7 +19,9 @@ int main()
     }
     */
 
-    base_t *base = father(conf);
+    int rv = child(conf);
+//    base_t *base = father(conf);
+    /*
     switch (fork()) {
         case -1:
             perror("fork");
@@ -31,10 +35,11 @@ int main()
             lt_base_loop(base, NO_TIMEOUT);
             break;
     }
-    return 0;
+    */
+    return rv;
 }
-
-base_t *father(conf_t *conf/*start restart ...  other conf*/)
+/*
+base_t *father(conf_t *conf)
 {
    base_t *base = lt_base_init();
    if (!base) {
@@ -50,7 +55,7 @@ base_t *father(conf_t *conf/*start restart ...  other conf*/)
 
    return base;
 }
-
+*/
 int child(conf_t *conf)
 {
     base_t *base = lt_base_init();

@@ -84,7 +84,7 @@ int proxy_process_header(request_t *req)
 char *proxy_get_upstream_addr()//TODO
 {
     char *upstream = "127.0.0.1";//TODO
-    return  upstream;
+    return upstream;
 }
 
 int proxy_connect(http_t *http, connection_t *conn)
@@ -136,7 +136,8 @@ int proxy_connect(http_t *http, connection_t *conn)
 int proxy_data_coming(event_t *ev, void *arg)
 {
     connection_t *conn = (connection_t *)arg;
-    conn->buf = lt_new_buffer_chain(conn->buf_pool, conn->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);
+    conn->buf = lt_new_buffer_chain(conn->buf_pool, conn->buf_pool_manager, 
+            DEFAULT_UPSTREAM_BUFFER_SIZE);
     int rv = lt_recv(conn->fd, conn->buf);//nginx just recv a part
     if (rv == LAGAIN) {
         conn->status = L_PROXY_WAITING_RESPONSE;

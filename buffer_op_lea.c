@@ -264,7 +264,7 @@ lt_recv(int fd, lt_buffer_t *lt_buf)
                 continue;
             }
             if (n == length) { 
-                lt_buffer_t *new_buf = lt_alloc(new_buf->pool, new_buf->pool->manager);
+                lt_buffer_t *new_buf = lt_alloc(lt_buf->pool, lt_buf->pool->manager);
                 lt_buf->next = new_buf;
                 lt_buf = new_buf;
                 continue;
