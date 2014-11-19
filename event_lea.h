@@ -27,8 +27,7 @@
 #define MAX_ACTIVE
 #define MAX_READY
 #define DEFAULT_BUF_SIZE (16384)
-#define INIT_EPEV (512)
-#define EVLIST_LEN (512)
+#define INIT_EPEV (512) //copy from Nginx1.7.6
 #define EPEV_MAX EVLIST_LEN
 #define LV_LAG (0x0000008)
 #define LV_CONN (0x0000004)
