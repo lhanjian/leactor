@@ -222,6 +222,10 @@ int lt_accept(int, struct sockaddr *sockaddr);
 ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *buf);
 int send_chains(base_t *, int fd, lt_chain_t *);
 
+int lt_set_reuseaddr(int fd, int yes);
+int lt_set_reuseport(int fd, int yes);
+int lt_set_keepalive(int fd, int yes);
+
 struct lt_string {
     int len;
     int free;

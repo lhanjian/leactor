@@ -107,8 +107,12 @@ int get_addrinfo_with_bind(http_t *http)
         http->listen.fd = listen_sock;
 
         int yes = 1;
-        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, 
-                    &yes, sizeof yes) == -1) {
+
+        lt_set_reuseaddr(listen_sock, 1);
+        lt_set_reuseport(listen_sock, 1);
+//        lt_set_keepalive(listen_sock, 1);
+        /*
+        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1) {
             perror("setsockopt_REUSE_ADDR");
             return -1;
         }
@@ -117,6 +121,17 @@ int get_addrinfo_with_bind(http_t *http)
             perror("setsockopt_REUSE_PORT");
             return -1;
         }
+
+        if (setsockopt(listen_sock, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof yes) == -1) {
+            perror("setsockopt_KEEPALIVE");
+            return -1;
+        }
+        */
+
+/*        if (setsockopt(listen_sock, SOL_SOCKET, TCP_, &yes, sizeof yes) == -1) {
+            perror("setsockopt_KEEPALIVE");
+            return -1;
+        }*/
 
         if (bind(listen_sock, p->ai_addr, p->ai_addrlen) == -1) {
             close(listen_sock);
@@ -472,6 +487,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
             &http->listen.connection_pool_manager);
 
     conn->fd = fd;
+
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
 
    /* conn->buf = lt_new_buffer_chain(http->listen.buf_pool, //when to release TODO

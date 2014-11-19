@@ -313,3 +313,42 @@ lt_accept(int fd, struct sockaddr *peer)
     return conn_fd;
 }
 
+int lt_set_reuseaddr(int sockfd, int yes)
+{
+    int rv = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes);
+    if (rv == -1) {
+        perror("setsockopt_REUSE_ADDR");
+        return -1;
+    }
+    return 0;
+}
+
+int lt_set_reuseport(int sockfd, int yes)
+{
+    int rv = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof yes);
+    if (rv == -1) {
+        perror("setsockopt_REUSE_PORT");
+        return -1;
+    }
+    return 0;
+}
+
+int lt_set_keepalive(int sockfd, int yes)
+{
+    int rv = setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof yes);
+    if (rv == -1) {
+        perror("setsockopt_KEEPALIVE");
+        return -1;
+    }
+    return 0;
+}
+
+int lt_set_nodelay(int sockfd, int yes)
+{
+    int rv = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof yes);
+    if (rv == -1) {
+        perror("setsockopt_TCP_NODELAY");
+        return -1;
+    }
+    return 0;
+}

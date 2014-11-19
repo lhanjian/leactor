@@ -17,6 +17,8 @@ int proxy_connect_writable(event_t *ev, void *arg)
         conn->status = L_PROXY_CONNECTED;
         conn->buf = lt_new_buffer_chain(conn->buf_pool, 
                 conn->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);
+
+        lt_set_keepalive(conn->fd, 1);
         //SUCCESS
 //        lt_io_remove(ev->base, ev);
     }
