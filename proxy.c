@@ -160,7 +160,7 @@ int proxy_data_coming(event_t *ev, void *arg)
 //        http_process_request_line(conn, req);
 
         return 0;
-    } else {
+    } else if (conn->status == L_HTTP_WROTE_RESPONSE_HEADER) {
 //        conn->handler(conn, conn->handler_arg);
     }
     //send_chains(ev->base, conn->fd, <#lt_chain_t *#>)
@@ -252,14 +252,21 @@ lt_chain_t *construct_response_chains(request_t *rep)
         if (element == rep->element_tail) {
             cur_chain->next->buf.iov_len += 2;
             lt_chain_t *tail_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
-            chain++;
             cur_chain->next->next = tail_chain;
             tail_chain->buf.iov_base = rep->header_end + 2;
             tail_chain->buf.iov_len = rep->header_in->last - (rep->header_end + 2);
+            chain++;
             tail_chain->next = NULL;
-            out_chain->chain_len = chain;
-
+            for (lt_buffer_t *buf = rep->header_in->next;
+                    buf;
+                    tail_chain = tail_chain->next, buf = buf->next) {//body
+                tail_chain->next = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+                tail_chain->next->buf.iov_base = buf->pos;
+                tail_chain->next->buf.iov_len = buf->last - buf->pos;
+                chain++;
+            }
             goto done;
+
         }
         element = element->next;
         lt_chain_t *new_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
@@ -268,5 +275,6 @@ lt_chain_t *construct_response_chains(request_t *rep)
         cur_chain = new_chain;
     }
 done:
+    out_chain->chain_len = chain;
     return out_chain;
 }

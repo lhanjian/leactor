@@ -8,6 +8,7 @@
 
 
 ssize_t pospone_send_buffer_chains_loop(int fd, lt_buffer_t *out_buf);
+int send_buffers(base_t *, int fd, lt_buffer_t *out_buf);
 
 lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
         lt_memory_pool_t *manager, size_t size)
@@ -30,7 +31,7 @@ lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
             old_buf->next = new_buf;
             old_buf = new_buf;
         }
-        new_buf->next = buf;//circular_list
+        //new_buf->next = buf;//circular_list
     }
 
     return buf;
@@ -49,7 +50,7 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     buf->last = buf->start;
 
     buf->pool = pool;
-    buf->next = buf;
+    buf->next = NULL;
     buf->head = 0;
     buf->written = 0;
 
@@ -58,9 +59,15 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
 
 int resend_chains(event_t *ev, void *arg)
 {
-    lt_send_t *out = (lt_send_t *)arg;
-    send_chains(ev->base, out->fd, out->chain);
+    lt_chain_t *out = (lt_chain_t *)arg;
+    send_chains(ev->base, ev->fd, out);
+    return 0;
+}
 
+int resend_buffers(event_t *ev, void *arg)
+{
+    lt_buffer_t *buf = (lt_buffer_t *)buf;
+    send_buffers(ev->base, ev->fd, buf);
     return 0;
 }
 
@@ -128,34 +135,21 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
     return LOK;//all complete;
 }
 
-/*
-int send_chains(int fd, lt_chain_t *out_chain)
+
+int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
 {
-    lt_chain_t *chain = out_chain;
-    lt_chain_t *old_chain;
-    lt_buffer_t *buf = out_chain->buf;
+    lt_buffer_t *buf = out_buf;
 
-    int iov_i = 1;
-
-    for (; chain; chain = chain->next) {
-        for (; buf->next != buf; iov_i++, buf = buf->next) { };
-        old_chain = chain;
+    int iov_i;
+    for (iov_i = 1; out_buf; out_buf = out_buf->next) {
+        iov_i++;
     }
-    lt_chain_t *tail_chain = old_chain;
 
     struct iovec out_vector[iov_i];
 
-    lt_chain_t *cur_chain = out_chain;
-    for (int i = 0; cur_chain; cur_chain = cur_chain->next) {
-        lt_buffer_t *cur_buf = cur_chain->buf;
-
-        while (1) {
-            out_vector[i].iov_base = buf;
-            out_vector[i].iov_len = buf->last - buf->pos;
-
-            if (buf->next == buf) break; 
-            else { i++;  buf = buf->next; }
-        }
+    for (int i = 0; i < iov_i; i++, buf = buf->next) {
+        out_vector[i].iov_base = buf->pos;
+        out_vector[i].iov_len = buf->last - buf->pos;
     }
 
     ssize_t n = writev(fd, out_vector, iov_i);
@@ -171,14 +165,14 @@ int send_chains(int fd, lt_chain_t *out_chain)
         int iov_len;
 
         for (int i = 0; i < iov_i; i++) {
-            iov_len = out_vector[i].iov_len
+            iov_len = out_vector[i].iov_len;
             if (remain > iov_len) {
                 cur_buf = out_vector[i].iov_base;
                 cur_buf->pos += iov_len;
                 remain -= iov_len;
-                cur_buf = cur_buf->next;
             } else if (remain < iov_len){
                 cur_buf->pos += remain;
+                lt_new_post_callback(base, resend_buffers, fd, out_buf);
                 //post writev
                 break;
             } else {
@@ -190,7 +184,7 @@ int send_chains(int fd, lt_chain_t *out_chain)
 
     return 0;
 }
-*/
+
 /*
 ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *out_buf)
 {
@@ -260,11 +254,13 @@ lt_recv(int fd, lt_buffer_t *lt_buf)
         } else if (n > 0) {
             lt_buf->last += n;
             recv_len += n;
+
             if (n < length) {
                 continue;
             }
+            
             if (n == length) { 
-                lt_buffer_t *new_buf = lt_alloc(lt_buf->pool, lt_buf->pool->manager);
+                lt_buffer_t *new_buf = lt_new_buffer(lt_buf->pool, lt_buf->pool->manager);
                 lt_buf->next = new_buf;
                 lt_buf = new_buf;
                 continue;

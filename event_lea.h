@@ -11,12 +11,15 @@
 #include <ctype.h>
 //system independence
 #include <sys/epoll.h>
+#include <netinet/tcp.h>
 #include <sys/uio.h>
 #include <sys/timerfd.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+
+int accept4(int, struct sockaddr *, socklen_t *, int flags);
 
 #define debug_print(fmt, ...) \
     do {if (DEBUG) \

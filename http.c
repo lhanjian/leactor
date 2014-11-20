@@ -106,8 +106,6 @@ int get_addrinfo_with_bind(http_t *http)
 
         http->listen.fd = listen_sock;
 
-        int yes = 1;
-
         lt_set_reuseaddr(listen_sock, 1);
         lt_set_reuseport(listen_sock, 1);
 //        lt_set_keepalive(listen_sock, 1);
