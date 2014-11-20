@@ -221,7 +221,7 @@ ssize_t lt_recv(int, lt_buffer_t *);
         ///*, lt_memory_manager_t *);
 //, size_t);
 int lt_accept(int, struct sockaddr *sockaddr);
-ssize_t send_buffer_chains_loop(int fd, lt_buffer_t *buf);
+int send_buffers(base_t *, int fd, lt_buffer_t *buf);
 int send_chains(base_t *, int fd, lt_chain_t *);
 
 int lt_set_reuseaddr(int fd, int yes);

@@ -141,7 +141,7 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
     lt_buffer_t *buf = out_buf;
 
     int iov_i;
-    for (iov_i = 1; out_buf; out_buf = out_buf->next) {
+    for (iov_i = 0; out_buf; out_buf = out_buf->next) {
         iov_i++;
     }
 
@@ -174,15 +174,15 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
                 cur_buf->pos += remain;
                 lt_new_post_callback(base, resend_buffers, fd, out_buf);
                 //post writev
-                break;
+                return LAGAIN;
             } else {
+                return LOK;
                 //complete
             }
         }
     }
 
-
-    return 0;
+    __builtin_unreachable();
 }
 
 /*
