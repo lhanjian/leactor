@@ -138,3 +138,10 @@ Date Upstream -> reverseProxy
 
 类似尾递归的优化
 
+Client接受完毕chunked ，主动进行一次recv，确保keepalive
+
+       If  you  plan  to use sendfile() for sending files to a TCP socket, but
+       need to send some header data in front of the file contents,  you  will
+       find  it  useful to employ the TCP_CORK option, described in tcp(7), to
+       minimize the number of packets and to tune performance.
+

@@ -24,6 +24,10 @@ unsigned int BKDRhash(char *str, int length)
     return hash;
 }
 
+int http_check_chunked(lt_buffer_t *buf)
+{
+    return 0;
+}
 int http_find_host(request_t *req)
 {
     return LOK;
@@ -370,6 +374,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
             debug_print("%s", "DONE\n");
             if (conn->pair->status == L_PROXY_SENDING_RESPONSE_TO_CLIENT) {
 
+            conn->status = 
             }
             */
             //if (conn->status == L_PROXY_SENDING_
@@ -585,9 +590,9 @@ int http_send_to_client(connection_t *conn, request_t *req)
     int rv = send_chains(conn->ev->base, client_conn->fd, out_chain);
     switch (rv) {
         case LOK:
-            conn->status = L_HTTP_WROTE_RESPONSE_HEADER;
+            conn->status = L_HTTP_WROTE_RESPONSE;
             break;
-        case LAGAIN:
+        case LAGAIN://NO USE
             conn->status = L_HTTP_WRITING_RESPONSE_HEADER;
             break;
         case LCLOSE:

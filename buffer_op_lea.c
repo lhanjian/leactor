@@ -92,8 +92,8 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
         int errsv = errno;
         switch (errsv) {
             case EAGAIN://POST_SEND:TODO
-                lt_new_post_callback(base, resend_chains, fd, out_chain);
-                return LAGAIN;
+                lt_new_post_callback(base, resend_chains, fd, out_chain);//TOMORROW TODAY
+                return LOK;//TODO
             default:
                 perror("writev:");
                 return LERROR;

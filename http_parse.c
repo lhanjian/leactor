@@ -1,4 +1,5 @@
 #include "http.h"
+
 int http_process_host(request_t *req, lt_string_t *host/*, int off*/)
 {
     enum {

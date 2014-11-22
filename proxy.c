@@ -164,6 +164,8 @@ int proxy_data_coming(event_t *ev, void *arg)
 //      if (conn->chunked) {
         int client_fd = conn->pair->fd;
         send_buffers(conn->ev->base, client_fd, conn->buf);
+        
+        //http_check_chunked(conn->buf);//TODO
 //      }
 //        conn->handler(conn, conn->handler_arg);
     }
