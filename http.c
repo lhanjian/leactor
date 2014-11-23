@@ -590,7 +590,7 @@ int http_send_to_client(connection_t *conn, request_t *req)
     int rv = send_chains(conn->ev->base, client_conn->fd, out_chain);
     switch (rv) {
         case LOK:
-            conn->status = L_HTTP_WROTE_RESPONSE;
+            conn->status = L_HTTP_WROTE_RESPONSE_HEADER;
             break;
         case LAGAIN://NO USE
             conn->status = L_HTTP_WRITING_RESPONSE_HEADER;

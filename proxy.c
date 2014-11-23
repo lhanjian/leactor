@@ -137,6 +137,7 @@ int proxy_connect(http_t *http, connection_t *conn)
 
 int proxy_data_coming(event_t *ev, void *arg)
 {
+    request_t *req;
     connection_t *conn = (connection_t *)arg;
     conn->buf = lt_new_buffer_chain(conn->buf_pool, conn->buf_pool_manager, 
             DEFAULT_UPSTREAM_BUFFER_SIZE);
@@ -151,16 +152,16 @@ int proxy_data_coming(event_t *ev, void *arg)
     }
 
     if (conn->status == L_PROXY_WAITING_RESPONSE) {
-        request_t *req = http_create_request(conn);
+        req = http_create_request(conn);
         http_process_response_line(conn, req);
 
         debug_print("%s", "SUCCESS parse response\n");
         //send_chains(ev->base, conn->pair->fd, &chain);
 //        http_process_response_line(conn, req);
 //        http_process_request_line(conn, req);
+    } 
 
-        return 0;
-    } else if (conn->status == L_HTTP_WROTE_RESPONSE_HEADER) {
+    if (conn->status == L_HTTP_WROTE_RESPONSE_HEADER) {
 //      if (conn->chunked) {
         int client_fd = conn->pair->fd;
         send_buffers(conn->ev->base, client_fd, conn->buf);
@@ -186,7 +187,7 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
     int rv = send_chains(base, proxy_fd, send_chain);
     switch (rv) {
         case LOK:
-            client_conn->status = L_HTTP_WAITING_RESPONSE;
+            client_conn->status = L_CONNECTING_ACCEPTED;
             proxy_conn->status = L_PROXY_WAITING_RESPONSE;
             //http_finish_request
             break;
@@ -257,12 +258,15 @@ lt_chain_t *construct_response_chains(request_t *rep)
 
         if (element == rep->element_tail) {
             cur_chain->next->buf.iov_len += 2;
+            /*
             lt_chain_t *tail_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
             cur_chain->next->next = tail_chain;
             tail_chain->buf.iov_base = rep->header_end + 2;
             tail_chain->buf.iov_len = rep->header_in->last - (rep->header_end + 2);
             chain++;
             tail_chain->next = NULL;
+            */
+            /*
             for (lt_buffer_t *buf = rep->header_in->next;
                     buf;
                     tail_chain = tail_chain->next, buf = buf->next) {//body
@@ -271,6 +275,7 @@ lt_chain_t *construct_response_chains(request_t *rep)
                 tail_chain->next->buf.iov_len = buf->last - buf->pos;
                 chain++;
             }
+            */
             goto done;
 
         }

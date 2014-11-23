@@ -134,11 +134,45 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
 
     return LOK;//all complete;
 }
+/*
+int http_is_chunked_tail(request_t *rep, lt_buffer_t *buf)
+{
+    lt_buffer_t *b = buf;
+    lt_buffer_t *prev;
+    for (prev = b; b->next; b = b->next, prev = b) {
+    }
 
+    char *CRLF_zero_CRLF = "0\r\n\r\n";
+
+    char *p = b->last;
+    int i = 4;
+    while (i < 0) {
+        if (*p != CRLF_zero_CRLF[i]) {
+            return 0;
+        }
+        if (p == b->start) {
+            p = prev->last;
+        }
+        p--;
+        i--;
+    }
+
+    return 1;
+}
+*/
 
 int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
 {
+    if(!out_buf) {
+        return 0;
+    }
+
+    if (out_buf->pos == out_buf->last) {
+        return 0;
+    }
+    
     lt_buffer_t *buf = out_buf;
+
 
     int iov_i;
     for (iov_i = 0; out_buf; out_buf = out_buf->next) {

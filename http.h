@@ -228,6 +228,7 @@ lt_chain_t *construct_request_chains(request_t *req);
 lt_chain_t *construct_response_chains(request_t *rep);
 char *proxy_get_upstream_addr();
 int http_send_to_client(connection_t *, request_t *);
+int http_is_chunked_tail(request_t *, lt_buffer_t *);
 
 #define L_PROXY_CONNECTED (-1)
 #define L_PROXY_CONNECTING (-2)
