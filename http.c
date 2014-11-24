@@ -241,7 +241,7 @@ int http_request_line_parsed(request_t *req, int rv)
 
     //process_request_uri
     if (req->args_start) {
-        req->uri.length = req->args_start - 1 - req->uri_start;
+        req->uri.length = req->args_start /*- 1*/ - req->uri_start;//BUG???
     } else {
         req->uri.length = req->uri_end - req->uri_start;
     }
@@ -573,6 +573,79 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
     return http;
 }
 
+lt_chain_t *construct_response_chains(request_t *rep)
+{
+//    int chain_len = 0;
+    lt_new_memory_pool_manager(&rep->chain_pool_manager);
+    rep->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &rep->chain_pool_manager, NULL);
+/*
+    lt_chain_t *http_version = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    http_version->buf.iov_base = rep->http_protocol.data;
+    http_version->buf.iov_len = rep->http_protocol.length + 1;//' '
+    chain_len++;
+
+    lt_chain_t *status_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    http_version->next = status_chain;
+    status_chain->buf.iov_base = rep->status.start;//OPTIM TODO: struct iovec 和 string 类似
+    status_chain->buf.iov_len = rep->status.count;
+    chain_len++;
+    
+    lt_chain_t *
+*/
+    lt_chain_t *status_line = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    status_line->buf.iov_base = rep->request_line.data;
+    status_line->buf.iov_len = rep->request_line.length + 2;
+
+    int chain = 1;
+
+    lt_chain_t *out_chain = status_line;
+    lt_http_header_element_t *element = rep->element_head;
+
+    lt_chain_t *cur_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    out_chain->next = cur_chain;
+    for (;;) {
+        cur_chain->buf.iov_base = element->key.data;
+        cur_chain->buf.iov_len = element->key.length + 2;
+        chain++;
+
+        cur_chain->next = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+        cur_chain->next->buf.iov_base = element->value.data;
+        cur_chain->next->buf.iov_len = element->value.length + 2;
+        chain++;
+
+        if (element == rep->element_tail) {
+            cur_chain->next->buf.iov_len += 2;
+            /*
+            lt_chain_t *tail_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+            cur_chain->next->next = tail_chain;
+            tail_chain->buf.iov_base = rep->header_end + 2;
+            tail_chain->buf.iov_len = rep->header_in->last - (rep->header_end + 2);
+            chain++;
+            tail_chain->next = NULL;
+            */
+            /*
+            for (lt_buffer_t *buf = rep->header_in->next;
+                    buf;
+                    tail_chain = tail_chain->next, buf = buf->next) {//body
+                tail_chain->next = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+                tail_chain->next->buf.iov_base = buf->pos;
+                tail_chain->next->buf.iov_len = buf->last - buf->pos;
+                chain++;
+            }
+            */
+            goto done;
+
+        }
+        element = element->next;
+        lt_chain_t *new_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+
+        cur_chain->next->next = new_chain;
+        cur_chain = new_chain;
+    }
+done:
+    out_chain->chain_len = chain;
+    return out_chain;
+}
 /*
 int http_send_body_to_client(event_t *ev, void *arg)
 {
