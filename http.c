@@ -455,7 +455,9 @@ int http_process_request_line(connection_t *conn, void *arg)
 
         rv = http_process_request_headers(conn, req);
         if (rv == LOK) {
-            proxy_send_to_upstream(conn, req);
+            lt_chain_t *send_chain = http_construct_request_chains(req);
+            rv = http_send_to_upstream(conn, req, send_chain);
+            //proxy_send_to_upstream(conn, req);
         }
 
         return http_process_request_line(conn, arg);
@@ -658,7 +660,7 @@ lt_chain_t *construct_response_chains(request_t *rep)
             tail_chain->buf.iov_len = rep->header_in->last - (rep->header_end + 2);
             chain++;
             tail_chain->next = NULL;
-            */
+            */ 
             /*
             for (lt_buffer_t *buf = rep->header_in->next;
                     buf;

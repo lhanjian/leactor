@@ -230,7 +230,8 @@ proxy_t *proxy_worker_new(base_t *, conf_t *);
 connection_t *proxy_connect_backend(proxy_t *, conf_t *);
 int proxy_connect(http_t *, connection_t *);
 int proxy_send_to_upstream(connection_t *conn, request_t *req);
-lt_chain_t *construct_request_chains(request_t *req);
+lt_chain_t *http_construct_request_chains(request_t *req);
+int http_send_to_upstream(connection_t *, request_t *, lt_chain_t *);
 lt_chain_t *construct_response_chains(request_t *rep);
 char *proxy_get_upstream_addr();
 int http_send_to_client(connection_t *, request_t *);
@@ -243,7 +244,7 @@ int destructor_chains(request_t *, lt_chain_t *);
 #define L_HTTP_WROTE_RESPONSE (-3)
 #define L_PROXY_WAITING_RESPONSE (-4)
 #define L_HTTP_WRITING_RESPONSE_HEADER (-4)
-#define L_PROXY_WRITING (-5)
+#define L_PROXY_WRITING (-5) 
 #define L_HTTP_WAITING_RESPONSE (-5)
 #define L_PROXY_ERROR (-6)
 #define L_HTTP_ERROR (-6)

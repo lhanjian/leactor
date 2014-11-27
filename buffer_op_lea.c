@@ -56,31 +56,32 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
 
     return buf;
 }
-
+/*
 int resend_chains(event_t *ev, void *arg)
 {
     lt_chain_t *out = (lt_chain_t *)arg;
     int rv = send_chains(ev->base, ev->fd, out);
     return 0;
 }
-
+*/
+/*
 int resend_buffers(event_t *ev, void *arg)
 {
     lt_buffer_t *buf = (lt_buffer_t *)buf;
     send_buffers(ev->base, ev->fd, buf);
     return 0;
 }
-
-int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
+*/
+int send_chains(base_t *base, int fd, lt_chain_t **out_chain)
 {
-    int chain_len = out_chain->chain_len;
+    int chain_len = *out_chain->chain_len;
     //lt_chain_t *rv_chain;
 /*
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
         chain_len++;
     } */
     struct iovec out_vec[chain_len];
-    lt_chain_t *cur_chain = out_chain;
+    lt_chain_t *cur_chain = *out_chain;
     for (int i = 0; i < chain_len; i++) {
         out_vec[i] = cur_chain->buf;
         cur_chain = cur_chain->next;
@@ -91,8 +92,9 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
         int errsv = errno;
         switch (errsv) {
             case EAGAIN://POST_SEND:TODO
-                lt_new_post_callback(base, resend_chains, fd, out_chain);//TOMORROW TODAY
-                return LOK;//TODO
+//                lt_new_post_callback(base, resend_chains, fd, out_chain);//TOMORROW TODAY
+                *out_chain = cur_chain;
+                return LAGAIN;//TODO
             case EPIPE:
                 return LCLOSE;
             default:
@@ -107,7 +109,7 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
     }
     
     //rv > 0
-    for (lt_chain_t *cur = out_chain; 
+    for (lt_chain_t *cur = *out_chain; 
                      cur; //LOK
                      cur = cur->next) {
         int iov_len = cur->buf.iov_len;
@@ -127,7 +129,8 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
                 continue;
             } else /*if(rv < iov_len)*/ {
                 cur_chain->chain_len = chain_len;
-                lt_new_post_callback(base, resend_chains, fd, cur_chain);
+//                lt_new_post_callback(base, resend_chains, fd, cur_chain);
+                *out_chain = cur_chain;
                 return LAGAIN;
             }
         }

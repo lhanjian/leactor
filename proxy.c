@@ -177,17 +177,25 @@ int proxy_data_coming(event_t *ev, void *arg)
     return 0;
 }
 
-int proxy_send_to_upstream(connection_t *conn, request_t *req)
+int resend_chains(event_t *ev, void *arg)
+{
+    lt_chain_t *out = (lt_chain_t *)arg;
+    int rv = send_chains(ev->base, ev->fd, &out);
+    return 0;
+}
+
+int http_send_to_upstream(connection_t *conn, request_t *req, lt_chain_t *send_chain)
 {
     connection_t *proxy_conn = conn->pair;
     connection_t *client_conn = conn;
-
-    int proxy_fd = conn->pair->fd;//= proxy_single->conn[conn->]->fd;
+    int proxy_fd = conn->pair->fd;
     base_t *base = conn->ev->base;
 
+    /*
     lt_chain_t *send_chain = construct_request_chains(req);
+    */
 
-    int rv = send_chains(base, proxy_fd, send_chain);
+    int rv = send_chains(base, proxy_fd, &send_chain);
     switch (rv) {
         case LOK:
             client_conn->status = L_CONNECTING_ACCEPTED;
@@ -196,6 +204,9 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
             //http_finish_request
             break;
         case LAGAIN:
+            struct {
+            } sending;
+            lt_new_post_callback(base, resend_chains, proxy_fd, send_chain);
             proxy_conn->status = L_PROXY_WRITING;
             break;
         case LERROR:
@@ -204,7 +215,7 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
             break;
         case LCLOSE:
             proxy_conn->status = L_PROXY_CLOSING;
-            //connection_closed
+            //connection_closed TODO
             break;
         default:
             proxy_conn->status = L_PROXY_ERROR;
