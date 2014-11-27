@@ -10,6 +10,7 @@
 #include <time.h>
 #include <ctype.h>
 //system independence
+#include <signal.h>
 #include <sys/epoll.h>
 #include <netinet/tcp.h>
 #include <sys/uio.h>
@@ -227,6 +228,7 @@ int send_chains(base_t *, int fd, lt_chain_t *);
 int lt_set_reuseaddr(int fd, int yes);
 int lt_set_reuseport(int fd, int yes);
 int lt_set_keepalive(int fd, int yes);
+int lt_ignore_sigpipe(void);
 
 struct lt_string {
     int len;

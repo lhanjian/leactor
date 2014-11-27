@@ -192,6 +192,7 @@ int proxy_send_to_upstream(connection_t *conn, request_t *req)
         case LOK:
             client_conn->status = L_CONNECTING_ACCEPTED;
             proxy_conn->status = L_PROXY_WAITING_RESPONSE;
+            destructor_chains(req, send_chain);
             //http_finish_request
             break;
         case LAGAIN:

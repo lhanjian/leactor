@@ -202,8 +202,13 @@ int set_http_data_coming_timeout();
 
 request_t *http_create_request(connection_t *conn)
 {
-    request_t *req = 
-        lt_alloc(conn->request_pool, &conn->request_pool_manager);
+    request_t *req;
+    if (conn->request_free_head) {
+        req = conn->request_free_head;
+        conn->request_free_head = req->next;
+    } else {
+        req = lt_alloc(conn->request_pool, &conn->request_pool_manager);
+    }
 
     req->header_in = conn->buf;
     req->state = 0;
@@ -240,9 +245,11 @@ int http_request_line_parsed(request_t *req, int rv)
     req->http_protocol.length = req->request_end - req->http_protocol.data;
 
     //process_request_uri
-    if (req->args_start) {
-        req->uri.length = req->args_start /*- 1*/ - req->uri_start;//BUG???
-    } else {
+/*    if (req->args_start) {//NO URI ARGS PARSE
+        req->uri.length = req->args_start - 1 - req->uri_start;//BUG???
+    } else */
+
+    {
         req->uri.length = req->uri_end - req->uri_start;
     }
 
@@ -260,10 +267,13 @@ int http_request_line_parsed(request_t *req, int rv)
     if (req->uri_ext) {
         //TODO
     }
-
+/*
     if (req->args_start && req->uri_end > req->args_start) {
-        //TODO
+        req->args.len = req->uri_end - req->args_start;
+        req->args.data = req->args_start;
+        //TODO:NO ARGS PARSE
     }
+    */
     //process_request_uri OVER
     if (req->host_start && req->host_end) {
         //TODO???
@@ -412,6 +422,22 @@ int http_process_response_line(connection_t *conn, void *arg)
     return 0;
 }
 
+int http_finish_request(connection_t *conn, request_t *req)
+{
+    lt_destroy_memory_pool(req->header_pool ,&req->header_pool_manager);
+
+    req->next = NULL;
+    if (conn->request_free_tail) {
+        conn->request_free_tail->next = req;
+        conn->request_free_tail = req;
+    } else {
+        conn->request_free_tail = req;
+        conn->request_free_head = req;
+    }
+    
+    return 0;
+}
+
 int http_process_request_line(connection_t *conn, void *arg)
 {
     request_t *req = (request_t *)arg;
@@ -424,16 +450,19 @@ int http_process_request_line(connection_t *conn, void *arg)
         http_request_line_parsed(req, rv);
 /*      event->callback = http_process_request_headers;
         event->arg = req; */
-        conn->handler = http_process_request_headers;
-        conn->handler_arg = req;//state changed
+/*        conn->handler = http_process_request_headers;
+        conn->handler_arg = req;*/
 
-        int rc = http_process_request_headers(conn, req);
-        if (rc == LOK) {
+        rv = http_process_request_headers(conn, req);
+        if (rv == LOK) {
             proxy_send_to_upstream(conn, req);
         }
+
+        return http_process_request_line(conn, arg);
     }
 
-    return 0;
+/*    if (rv == LAGAIN) { }*/
+    return rv;//试图简化pipeline的流程
 }
 
 int http_data_coming(event_t *ev, void *arg)
@@ -473,7 +502,9 @@ int http_data_coming(event_t *ev, void *arg)
 /*        conn->handler = http_process_request_line;
         conn->handler_arg = req;*/
         return 0;
-    } else {//state machine???
+    } 
+    
+    {//state machine???
         //if waiting remaining part of packet???
 //        conn->handler(conn, conn->handler_arg);
     }
@@ -539,7 +570,6 @@ int start_accept(event_t *ev, void *arg)
     return 0;
 }
 
-
 http_t *http_worker_new(base_t *base, conf_t *conf)
 {
     http_t *http = malloc(sizeof(http_t));
@@ -559,9 +589,15 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 //    http->listen.fd = conf->listen_fd;
 //    http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
 //            start_accept, http, NO_TIMEOUT);
-
+    
 
     int rv = http_add_listen(http, conf);
+    if (rv) {
+        free(http);
+        return NULL;
+    }
+
+    rv = lt_ignore_sigpipe();
     if (rv) {
         free(http);
         return NULL;
@@ -681,7 +717,11 @@ int http_send_to_client(connection_t *conn, request_t *req)
 }
 //TODO:key-value pair
 
-
+int destructor_chains(request_t *req, lt_chain_t *chain)
+{
+    lt_destroy_memory_pool(req->chain_pool, &req->chain_pool_manager);
+    return 0;
+}
 
 lt_chain_t *construct_request_chains(request_t *req)
 {
@@ -695,7 +735,7 @@ lt_chain_t *construct_request_chains(request_t *req)
 //    lt_chain_t *old_chain = chain_request_line;
 
     int chain_len = 0;
-
+//TODO 合并本就在连续地址上的chain
     lt_chain_t *method_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
     method_chain->buf.iov_base = req->method_name.data;//method
     method_chain->buf.iov_len = req->method_name.length + 1;//" "

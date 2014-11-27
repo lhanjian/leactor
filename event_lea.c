@@ -415,3 +415,16 @@ long long
 lt_time_a_sub_b(lt_time_t a, lt_time_t b)
 { return (a.tv_sec*1000000000LL + a.tv_nsec - b.tv_sec * 1000000000LL - b.tv_nsec); }
 
+
+int 
+lt_ignore_sigpipe()
+{
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    if (sigaction(SIGPIPE, &sa, 0) == -1) {
+        perror("sigaction SIGPIPE:");
+        return -1;
+    }
+    return 0;
+}

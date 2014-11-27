@@ -60,7 +60,7 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
 int resend_chains(event_t *ev, void *arg)
 {
     lt_chain_t *out = (lt_chain_t *)arg;
-    send_chains(ev->base, ev->fd, out);
+    int rv = send_chains(ev->base, ev->fd, out);
     return 0;
 }
 
@@ -78,8 +78,7 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
 /*
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
         chain_len++;
-    }
-    */
+    } */
     struct iovec out_vec[chain_len];
     lt_chain_t *cur_chain = out_chain;
     for (int i = 0; i < chain_len; i++) {
@@ -94,6 +93,8 @@ int send_chains(base_t *base, int fd, lt_chain_t *out_chain)
             case EAGAIN://POST_SEND:TODO
                 lt_new_post_callback(base, resend_chains, fd, out_chain);//TOMORROW TODAY
                 return LOK;//TODO
+            case EPIPE:
+                return LCLOSE;
             default:
                 perror("writev:");
                 return LERROR;
@@ -190,7 +191,11 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
     if (n == -1) {
         int errsv = errno;
         switch(errsv) {
-            case EAGAIN:break;
+            case EAGAIN:
+                lt_new_post_callback(base, resend_buffers, fd, out_buf);
+                break;
+            case EPIPE: 
+                return LCLOSE;
             default:return LERROR;
         }
     } else if (n > 0) {
@@ -206,7 +211,7 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
                 remain -= iov_len;
             } else if (remain < iov_len){
                 cur_buf->pos += remain;
-                lt_new_post_callback(base, resend_buffers, fd, out_buf);
+                lt_new_post_callback(base, resend_buffers, fd, cur_buf);
                 //post writev
                 return LAGAIN;
             } else {
@@ -214,7 +219,11 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
                 //complete
             }
         }
+    } else if (n == 0) {
+        return LCLOSE;
     }
+
+
 
     __builtin_unreachable();
 }

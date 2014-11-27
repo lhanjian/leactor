@@ -122,6 +122,8 @@ typedef struct request {
 
     struct lt_memory_pool *chain_pool;
     struct lt_memory_pool  chain_pool_manager;
+
+    struct request *next;
 } request_t;
 
 
@@ -142,9 +144,13 @@ typedef struct connection {
     struct event *ev;
     struct event *proxy_ev;
 
+    struct lt_memory_pool *header_pool;
+    struct lt_memory_pool header_pool_manager;
+
     struct lt_memory_pool *request_pool;
     struct lt_memory_pool request_pool_manager;
-    struct request *request_list;
+    struct request *request_free_head;
+    struct request *request_free_tail;
 
     lt_buffer_t *buf;
     lt_buffer_t *proxy_buf;
@@ -229,6 +235,7 @@ lt_chain_t *construct_response_chains(request_t *rep);
 char *proxy_get_upstream_addr();
 int http_send_to_client(connection_t *, request_t *);
 int http_is_chunked_tail(request_t *, lt_buffer_t *);
+int destructor_chains(request_t *, lt_chain_t *);
 
 #define L_PROXY_CONNECTED (-1)
 #define L_PROXY_CONNECTING (-2)
