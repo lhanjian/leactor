@@ -203,6 +203,7 @@ int set_http_data_coming_timeout();
 request_t *http_create_request(connection_t *conn)
 {
     request_t *req;
+
     if (conn->request_free_head) {
         req = conn->request_free_head;
         conn->request_free_head = req->next;
@@ -210,6 +211,7 @@ request_t *http_create_request(connection_t *conn)
         req = lt_alloc(conn->request_pool, &conn->request_pool_manager);
     }
 
+    req->conn = conn;
     req->header_in = conn->buf;
     req->state = 0;
 
@@ -456,14 +458,14 @@ int http_process_request_line(connection_t *conn, void *arg)
         rv = http_process_request_headers(conn, req);
         if (rv == LOK) {
             lt_chain_t *send_chain = http_construct_request_chains(req);
-            rv = http_send_to_upstream(conn, req, send_chain);
+            req->out_chain = send_chain;
+            rv = http_send_to_upstream(req);
             //proxy_send_to_upstream(conn, req);
         }
 
         return http_process_request_line(conn, arg);
     }
 
-/*    if (rv == LAGAIN) { }*/
     return rv;//试图简化pipeline的流程
 }
 
@@ -698,7 +700,7 @@ int http_send_to_client(connection_t *conn, request_t *req)
 
     connection_t *client_conn = conn->pair;
     
-    int rv = send_chains(conn->ev->base, client_conn->fd, out_chain);
+    int rv = send_chains(conn->ev->base, client_conn->fd, &out_chain);
     switch (rv) {
         case LOK:
             conn->status = L_HTTP_WROTE_RESPONSE_HEADER;
@@ -725,7 +727,7 @@ int destructor_chains(request_t *req, lt_chain_t *chain)
     return 0;
 }
 
-lt_chain_t *construct_request_chains(request_t *req)
+lt_chain_t *http_construct_request_chains(request_t *req)
 {
     lt_new_memory_pool_manager(&req->chain_pool_manager);
     req->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &req->chain_pool_manager, NULL);

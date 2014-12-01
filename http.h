@@ -114,8 +114,8 @@ typedef struct request {
 
     char lowcase_header[32];
 
-    struct upstream *upstream;
-    struct status status;
+    struct upstream *upstream;//http_parse
+    struct status status;//http_parse
 
     struct lt_memory_pool *header_pool;
     struct lt_memory_pool  header_pool_manager;
@@ -123,6 +123,8 @@ typedef struct request {
     struct lt_memory_pool *chain_pool;
     struct lt_memory_pool  chain_pool_manager;
 
+    struct connection *conn;
+    lt_chain_t *out_chain;
     struct request *next;
 } request_t;
 
@@ -231,7 +233,7 @@ connection_t *proxy_connect_backend(proxy_t *, conf_t *);
 int proxy_connect(http_t *, connection_t *);
 int proxy_send_to_upstream(connection_t *conn, request_t *req);
 lt_chain_t *http_construct_request_chains(request_t *req);
-int http_send_to_upstream(connection_t *, request_t *, lt_chain_t *);
+int http_send_to_upstream(request_t *);
 lt_chain_t *construct_response_chains(request_t *rep);
 char *proxy_get_upstream_addr();
 int http_send_to_client(connection_t *, request_t *);

@@ -74,7 +74,7 @@ int resend_buffers(event_t *ev, void *arg)
 */
 int send_chains(base_t *base, int fd, lt_chain_t **out_chain)
 {
-    int chain_len = *out_chain->chain_len;
+    int chain_len = (*out_chain)->chain_len;
     //lt_chain_t *rv_chain;
 /*
     for (lt_chain_t *cur = out_chain; cur; cur = cur->next) { 
@@ -195,7 +195,8 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
         int errsv = errno;
         switch(errsv) {
             case EAGAIN:
-                lt_new_post_callback(base, resend_buffers, fd, out_buf);
+                return LAGAIN;
+                //lt_new_post_callback(base, resend_buffers, fd, out_buf);
                 break;
             case EPIPE: 
                 return LCLOSE;
@@ -214,7 +215,7 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
                 remain -= iov_len;
             } else if (remain < iov_len){
                 cur_buf->pos += remain;
-                lt_new_post_callback(base, resend_buffers, fd, cur_buf);
+                //lt_new_post_callback(base, resend_buffers, fd, cur_buf);
                 //post writev
                 return LAGAIN;
             } else {
@@ -225,8 +226,6 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
     } else if (n == 0) {
         return LCLOSE;
     }
-
-
 
     __builtin_unreachable();
 }

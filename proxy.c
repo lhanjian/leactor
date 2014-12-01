@@ -179,22 +179,23 @@ int proxy_data_coming(event_t *ev, void *arg)
 
 int resend_chains(event_t *ev, void *arg)
 {
-    lt_chain_t *out = (lt_chain_t *)arg;
-    int rv = send_chains(ev->base, ev->fd, &out);
+    request_t *req = (request_t *)arg;
+    /*int rv = */
+    http_send_to_upstream(req);
+
     return 0;
 }
 
-int http_send_to_upstream(connection_t *conn, request_t *req, lt_chain_t *send_chain)
+int http_send_to_upstream(request_t *req)
 {
-    connection_t *proxy_conn = conn->pair;
-    connection_t *client_conn = conn;
-    int proxy_fd = conn->pair->fd;
-    base_t *base = conn->ev->base;
-
+    connection_t *client_conn = req->conn;
+    connection_t *proxy_conn  = client_conn->pair;
+    int           proxy_fd    = client_conn->pair->fd;
+    base_t *      base        = client_conn->ev->base;
+    lt_chain_t *  send_chain  = req->out_chain;
     /*
     lt_chain_t *send_chain = construct_request_chains(req);
     */
-
     int rv = send_chains(base, proxy_fd, &send_chain);
     switch (rv) {
         case LOK:
@@ -203,10 +204,8 @@ int http_send_to_upstream(connection_t *conn, request_t *req, lt_chain_t *send_c
             destructor_chains(req, send_chain);
             //http_finish_request
             break;
-        case LAGAIN:
-            struct {
-            } sending;
-            lt_new_post_callback(base, resend_chains, proxy_fd, send_chain);
+        case LAGAIN: //POOR!
+            lt_new_post_callback(base, resend_chains, proxy_fd, req);//execv
             proxy_conn->status = L_PROXY_WRITING;
             break;
         case LERROR:
