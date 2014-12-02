@@ -298,8 +298,13 @@ lt_base_loop(base_t *base, int timeout)
         ready = epoll_wait(base->epfd, /*base->*/epevents, 
 				/*base->readylist.event_len*/epevents_len, ep_to);//TODO:timerfd_create
         if (ready == -1) {
-			perror("epoll_wait");
-            return -1;
+            int errsv = errno;
+            if (errsv == EINTR) {
+                //
+            } else {
+                perror("epoll_wait");
+                return -1;
+            }
         }
         
         after = lt_gettime();
@@ -312,9 +317,9 @@ lt_base_loop(base_t *base, int timeout)
 		lt_loop_init_actlist(base, epevents, ready);
 
         lt_ev_process_and_moveout(base, after);
-
+/*
         if (ready == epevents_len)
-            epevents_len *= 2;
+            epevents_len *= 2;*/
     }
 
     return 0;

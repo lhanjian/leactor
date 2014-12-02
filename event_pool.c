@@ -41,9 +41,8 @@ lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager, lt_memory_po
     if (manager->next == NULL) {
         manager->next = new;
     }
-
-    new->next = manager->next;
     new->manager = manager;
+    new->next = manager->next;
 
     return new;
 }
@@ -119,17 +118,17 @@ void lt_destroy_memory_pool(lt_memory_pool_t *pool,
         lt_memory_pool_t *manager)
 {
     lt_memory_pool_t *cur_pool = manager->next;
-    lt_memory_pool_t *next_pool = cur_pool;
+    lt_memory_pool_t *next_pool;
     for (;;) {
-        cur_pool = next_pool;
         next_pool = cur_pool->next;
         free(cur_pool->all_item);
         free(cur_pool);
         if (cur_pool == next_pool) {
             break;
         }
+        cur_pool = next_pool;
     }
-    free(manager);
+//    free(manager);
     /*
     free(pool->all_item);
     free(pool->next);//TODO cirular list
