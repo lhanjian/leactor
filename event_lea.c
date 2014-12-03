@@ -42,6 +42,7 @@ lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//ev
     event->flag = flag_set;
     event->fd = fd;
     event->deleted = deleted;
+    event->next_active_ev = NULL;
 
     return event;
 }
@@ -71,6 +72,7 @@ int lt_new_post_callback(base_t *base, func_t callback, int fd, void *arg)//.*, 
         base->activelist.head = ev;
         base->activelist.tail = ev;
     }
+    ev->next_active_ev = NULL;
 
     return 0;
 }
@@ -188,7 +190,7 @@ lt_ev_process_and_moveout(base_t *base, /*active_evlist_t *actlist,*/ lt_time_t 
     active_evlist_t *actlist = &base->activelist;
     ready_evlist_t *readylist = &base->readylist;
     for (event_t *event = actlist->head; 
-            event != NULL; 
+            event; 
             event = event->next_active_ev) {//Why not use Tree?
 		if (lt_ev_check_timeout(event, nowtime)) {
             event->deleted = 1;
@@ -200,6 +202,8 @@ lt_ev_process_and_moveout(base_t *base, /*active_evlist_t *actlist,*/ lt_time_t 
             event->deleted = event->flag & LV_ONESHOT;//TODO
         }
     }
+    actlist->head = NULL;
+    actlist->tail = NULL;
     return;
 }
 
