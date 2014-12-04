@@ -3,7 +3,7 @@
 
 int child(conf_t *conf);
 
-base_t *father(conf_t *conf);
+//base_t *father(conf_t *conf);
 
 int main()
 {

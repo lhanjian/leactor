@@ -233,7 +233,7 @@ lt_loop_init_actlist(base_t *base, struct epoll_event ev_array[], int ready)
     event_t *ev_prev = actlist->head;
     for (; i < ready; i++) {
         event_t *ev = (event_t *)ev_array[i].data.ptr;
-        if (ev->flag & LV_LAG && ev_array[i].events & (EPOLLIN|EPOLLOUT)) {
+        if ((ev->flag & LV_LAG) && (ev_array[i].events & (EPOLLIN|EPOLLOUT)) ) {
             ev_prev->next_active_ev = ev;
             ev_prev = ev;
         } else {

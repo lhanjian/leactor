@@ -7,7 +7,7 @@
 #define LERROR (-2)
 
 
-ssize_t pospone_send_buffer_chains_loop(int fd, lt_buffer_t *out_buf);
+//ssize_t pospone_send_buffer_chains_loop(int fd, lt_buffer_t *out_buf);
 int send_buffers(base_t *, int fd, lt_buffer_t *out_buf);
 
 lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
@@ -345,6 +345,7 @@ lt_accept(int fd, struct sockaddr *peer)
             case EMFILE:
             case ENFILE:
                 perror("accept4:file descriptor Crashed"); 
+                /* no break */
             default:
                 fprintf(stderr, "unknown accept4 error\n"); 
                 return LERROR;
