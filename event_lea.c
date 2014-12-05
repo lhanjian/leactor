@@ -255,7 +255,7 @@ int timerfd_expiration(struct event *event, void *arg)
     
     return 0;
 }
-
+/*
 void timerfd_epoll_init(struct timespec timeout, base_t *base)
 {
     int tfd = base->timerfd;
@@ -271,19 +271,19 @@ void timerfd_epoll_init(struct timespec timeout, base_t *base)
             .tv_nsec = timeout.tv_nsec
         }
     };
-    /*
+
     struct epoll_event ev = {
         .data = { .fd = tfd},
         .events = EPOLLIN
     };
-    */
+
 
     timerfd_settime(tfd, 0, &new_value, &old_value);
     
     lt_io_add(base, tfd, LV_FDRD|LV_CONN, timerfd_expiration, NULL, NO_TIMEOUT);
     return ;
 }
-
+*/
 res_t 
 lt_base_loop(base_t *base, int timeout)
 {
