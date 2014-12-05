@@ -1,5 +1,3 @@
-//需要重写
-
 #include "event_lea.h"
 #define EVLIST_LEN (16)
 #include <stdarg.h>
@@ -21,7 +19,7 @@ static void init_pool_list(lt_memory_pool_t *pool);
 lt_memory_pool_t *
 lt_new_memory_pool(size_t one_item_size, lt_memory_pool_t *manager, lt_memory_pool_t *pos)
 {
-//    lt_memory_pool_t *new = 
+//    lt_memory_pool_t *new =
 /*    va_list ap;
     va_start(ap, manager);*/
 
@@ -142,7 +140,7 @@ lt_memory_pool_t *lt_new_memory_pool_manager(lt_memory_pool_t *pos)
 {
     lt_memory_pool_t *manager;
     if (!pos) {
-        manager = malloc(sizeof(lt_memory_pool_t)); 
+        manager = malloc(sizeof(lt_memory_pool_t));
     } else {
         manager = pos;
     }

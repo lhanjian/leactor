@@ -82,7 +82,7 @@ typedef int res_t;
     int correct;
 } res_t;*/
 typedef long to_t;
-
+/*
 typedef struct lt_memory_piece {
     struct lt_memory_piece *next;
 } lt_memory_piece_t;
@@ -106,7 +106,7 @@ lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size, lt_memory_manager_t *
 void*             lt_alloc(lt_memory_pool_t *pool, lt_memory_manager_t *manager);
 void              lt_free(lt_memory_pool_t *pool, void *object_contents);
 void              lt_destroy_memory_pool(lt_memory_pool_t *pool, lt_memory_pool_t *manager);
-
+*/
 lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *, lt_memory_pool_t *, size_t);
 lt_buffer_t *lt_new_buffer(lt_memory_pool_t *, lt_memory_pool_t *);
 
