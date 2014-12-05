@@ -121,7 +121,7 @@ int proxy_connect(http_t *http, connection_t *conn)
                      sizeof(struct sockaddr));
     if (rv < 0 && errno == EINPROGRESS) {
         conn->pair->ev = lt_io_add(conn->ev->base, conn->pair->fd, 
-                LV_FDWR|LV_CONN|LV_ONESHOT, proxy_connect_writable, conn->pair, INF);
+                LV_FDWR|LV_CONN|LV_ONESHOT, proxy_connect_writable, conn->pair, NO_TIMEOUT);
         return LAGAIN;
     } else if (!rv) {
         conn->pair->status = L_PROXY_CONNECTED;

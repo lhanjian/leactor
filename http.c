@@ -540,7 +540,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
             &conn->request_pool_manager, NULL);
 
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
-            http_data_coming, conn, INF);
+            http_data_coming, conn, NO_TIMEOUT);
     
     conn->peer_addr_c = proxy_get_upstream_addr();
     int rv = proxy_connect(http, conn);//pair connection
