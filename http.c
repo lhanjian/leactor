@@ -198,7 +198,7 @@ void recv_listenfd_to_child(int pfd[2], int *fd)
 }
 */
 
-int set_http_data_coming_timeout();
+//int set_http_data_coming_timeout();
 
 request_t *http_create_request(connection_t *conn)
 {
