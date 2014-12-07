@@ -19,6 +19,10 @@
 #define DEFAULT_HEADER_BUFFER_SIZE (16384)
 #define DEFAULT_UPSTREAM_BUFFER_SIZE (16384)
 #define HTTP_PARSE_HEADER_DONE (1)
+#define CHAIN_POOL_LENGTH (32)
+#define CONNECTION_POOL_LENGTH (32)
+#define BUFFER_POOL_LENGTH (64)
+
 typedef struct string {
     int length;
     char *data;
@@ -117,10 +121,8 @@ typedef struct request {
     struct upstream *upstream;//http_parse
     struct status status;//http_parse
 
-    struct lt_memory_pool *header_pool;
     struct lt_memory_pool  header_pool_manager;
 
-    struct lt_memory_pool *chain_pool;
     struct lt_memory_pool  chain_pool_manager;
 
     struct connection *conn;
@@ -146,10 +148,8 @@ typedef struct connection {
     struct event *ev;
     struct event *proxy_ev;
 
-    struct lt_memory_pool *header_pool;
     struct lt_memory_pool header_pool_manager;
 
-    struct lt_memory_pool *request_pool;
     struct lt_memory_pool request_pool_manager;
     struct request *request_free_head;
     struct request *request_free_tail;
@@ -183,15 +183,13 @@ typedef struct listening {
     char *bind_port;
     struct sockaddr saddr;
 
-    struct lt_memory_pool *connection_pool;
-    struct lt_memory_pool connection_pool_manager;
+    struct lt_memory_pool_manager connection_pool_manager;
     struct connection listen_conn;
     struct connection *client_list;
     struct connection *downstream_list;;
     struct event *ev;
 
-    struct lt_memory_pool *buf_pool;
-    struct lt_memory_pool buf_pool_manager;
+    struct lt_memory_pool_manager buf_pool_manager;
 } listening_t;
 
 typedef struct http {

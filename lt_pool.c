@@ -29,7 +29,7 @@ lt_alloc(lt_memory_pool_manager_t *manager)
 	}
 
 	new_space = cur->pos;
-	cur->pos = aligned_ptr(cur->pos, sizeof(uintptr_t)) + element_size;
+	cur->pos = alignment_ptr(cur->pos, sizeof(uintptr_t)) + element_size;
 
 	return new_space;
 }
@@ -49,7 +49,7 @@ lt_new_memory_pool(lt_memory_pool_manager_t *manager)
 	}
 
 	mem->start = (uintptr_t) mem + sizeof(lt_memory_pool_t);
-	mem->pos = aligned_ptr(mem->start, sizeof(uintptr_t)) + element_size;
+	mem->pos = alignment_ptr(mem->start, sizeof(uintptr_t)) + element_size;
 	mem->end = (uintptr_t) mem + size_of_pool_struct_and_all_elements;
 	mem->next = NULL;
 	mem->manager = manager;

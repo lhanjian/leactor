@@ -20,6 +20,23 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
+typedef struct lt_memory_pool {
+	uintptr_t start, end;
+	uintptr_t pos;
+
+	struct lt_memory_pool *next;
+	struct lt_memory_pool_manager *manager;
+} lt_memory_pool_t;
+
+typedef struct lt_memory_pool_manager {
+	lt_memory_pool_t *cur;
+	size_t one_element_size;
+	size_t element_count;
+	struct lt_memory_pool *head;
+	struct lt_memory_pool *tail;
+	struct lt_memory_pool_manager *heterogeneous_next;
+} lt_memory_pool_manager_t;
+
 int accept4(int, struct sockaddr *, socklen_t *, int flags);
 
 #define debug_print(fmt, ...) \
@@ -27,7 +44,7 @@ int accept4(int, struct sockaddr *, socklen_t *, int flags);
             fprintf(stderr, fmt, __VA_ARGS__); \
     }  while(0)
 
-
+#define EVENT_POOL_LENGTH (64)
 #define MAX_ACTIVE
 #define MAX_READY
 #define DEFAULT_BUF_SIZE (16384)
@@ -52,7 +69,7 @@ typedef struct lt_buffer {
     int head;
     int written;
     struct lt_buffer *next;
-    struct lt_memory_pool *pool;
+    struct lt_memory_pool_manager *pool;
 } lt_buffer_t;
 
 typedef struct lt_chain {
@@ -82,33 +99,9 @@ typedef int res_t;
     int correct;
 } res_t;*/
 typedef long to_t;
-/*
-typedef struct lt_memory_piece {
-    struct lt_memory_piece *next;
-} lt_memory_piece_t;
 
-typedef struct lt_memory_pool {
-    size_t one_item_size;
-
-    lt_memory_piece_t *head;
-    lt_memory_piece_t *pos;
-    lt_memory_piece_t *tail;
-
-    void *all_item;
-
-    struct lt_memory_pool  *next;
-    struct lt_memory_pool  *manager;
-} lt_memory_pool_t, lt_memory_manager_t;
-
-lt_memory_manager_t *
-                  lt_new_memory_pool_manager(lt_memory_manager_t *);
-lt_memory_pool_t* lt_new_memory_pool(size_t one_item_size, lt_memory_manager_t *manager, lt_memory_pool_t *);
-void*             lt_alloc(lt_memory_pool_t *pool, lt_memory_manager_t *manager);
-void              lt_free(lt_memory_pool_t *pool, void *object_contents);
-void              lt_destroy_memory_pool(lt_memory_pool_t *pool, lt_memory_pool_t *manager);
-*/
-lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *, lt_memory_pool_t *, size_t);
-lt_buffer_t *lt_new_buffer(lt_memory_pool_t *, lt_memory_pool_t *);
+lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_manager_t *, size_t);
+lt_buffer_t *lt_new_buffer(lt_memory_pool_manager_t *);
 
 typedef int flag_t;
 typedef struct event {
@@ -120,7 +113,12 @@ typedef struct event {
     lt_time_t     endtime;
     int           deleted;
     int           pos_in_ready;
+
     struct event *next_active_ev;
+
+    struct event *next;
+    struct event *prev;
+
     struct base  *base;
 //    int     epfd;
 } event_t;
@@ -132,14 +130,11 @@ typedef struct min_heap {
     unsigned  n;
     unsigned  a;
 } min_heap_t;
-
+/*
 typedef struct {
-    int event_len;
-    lt_memory_pool_t *event_pool;
     lt_memory_pool_t event_pool_manager;
-//   int             hole_len;
-//    event_t      ***hole_list;//deleted position
-} ready_evlist_t;//, activelist_t, evlist_t;
+} ready_evlist_t;*/
+//, activelist_t, evlist_t;
 
 typedef struct {
     int event_len;
@@ -148,21 +143,23 @@ typedef struct {
     event_t *tail;
 } active_evlist_t;
 
-
+/*
 typedef struct {
     int event_len;
     event_t **eventarray;
 } deleted_evlist_t;
-
+*/
 typedef struct base {
 //active event list and its number
     active_evlist_t     activelist;//ref? //TODO: certain binary tree?
 //eventlist list and its number
-    ready_evlist_t      readylist;
-    deleted_evlist_t    deletedlist;
+    //ready_evlist_t      readylist;
+//deleted_evlist_t    deletedlist;
 //epoll functions need it.
+    struct lt_memory_pool_manager event_pool_manager;
+    struct event       *free_ev_head;
     int                 epfd; 
-    struct epoll_event  *epevent;
+    struct epoll_event *epevent;
     int                 eptimeout;
 	lt_time_t           now;
     min_heap_t          timeheap;
@@ -175,12 +172,13 @@ base_t*   lt_base_init(void);
 event_t*  lt_io_add(base_t *base, int fd, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 event_t*  lt_io_mod(base_t *base, event_t *ev, flag_t flag_set, func_t callback, void *arg, to_t timeout);
 int lt_new_post_callback(base_t *, func_t, int fd, void *arg);
+event_t*  lt_new_event(base_t *);
 void      lt_io_remove(base_t *base, event_t *ev);
 res_t     lt_base_loop(base_t *base, int timeout);
 lt_time_t lt_timeout_add(base_t *base, event_t *ev, to_t to);
 //void      lt_free_evlist(evlist_t *list);
 res_t     lt_ev_check_timeout(event_t *ev, lt_time_t timeout);
-void      lt_remove_from_readylist(event_t *, ready_evlist_t *);
+//void      lt_remove_from_readylist(event_t *, ready_evlist_t *);
 //res_t     lt_remove_from_readylist(event_t *ev, ready_evlist_t *evlist);
 //res_t     lt_remove_from_readylist(event_t *ev, active_evlist_t *evlist);
 #define time_a_gt_b(X,Y,Z) ((long long)X Y (unsigned long long)Z)

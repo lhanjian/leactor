@@ -30,13 +30,11 @@ lt_add_to_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
     return res;
 }
 
-static event_t *
-lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//event_t *event, 
+void
+lt_ev_init_(event_t *event,//, deleted_evlist_t *deletedlist,//event_t *event,
         flag_t flag_set, int fd, //int epfd,
         func_t callback, void *arg, int deleted)
 {
-    event_t *event = lt_alloc(evlist->event_pool, &evlist->event_pool_manager);
-
     event->callback = callback;
     event->arg = arg;
     event->flag = flag_set;
@@ -44,9 +42,8 @@ lt_ev_constructor_(ready_evlist_t *evlist,//, deleted_evlist_t *deletedlist,//ev
     event->deleted = deleted;
     event->next_active_ev = NULL;
 
-    return event;
 }
-
+/*
 static event_t *
 lt_add_to_readylist(ready_evlist_t *readylist, //deleted_evlist_t* deletedlist,
   flag_t flag_set, int fd, func_t callback, void *arg)
@@ -59,20 +56,52 @@ lt_add_to_readylist(ready_evlist_t *readylist, //deleted_evlist_t* deletedlist,
 
     return event;
 }
-
-int lt_new_post_callback(base_t *base, func_t callback, int fd, void *arg)//.*, flag_t flag)
+*/
+event_t *
+lt_new_event(base_t *base)
 {
-    event_t *ev = lt_ev_constructor_(&base->readylist, LV_ONESHOT, fd, 
+	event_t *ev = NULL;
+	event_t *free_ev = base->free_ev_head->next;
+	if ((ev = free_ev)) {
+		free_ev->prev->next = free_ev->next;
+		free_ev->next->prev = free_ev->prev;
+	} else {
+		ev = lt_alloc(base->event_pool_manager);
+	}
+
+	return ev;
+}
+
+void
+lt_del_event(base_t *base, event_t *event)
+{
+	event_t *free_ev = base->free_ev_head->next;
+	if (free_ev) {
+		event->prev = free_ev->prev;
+		event->next = free_ev;
+		free_ev->prev = event;
+		free_ev->prev->next = event;
+	} else {
+		base->free_ev_head->next = event;
+		event->prev = base->free_ev_head;
+	}
+	return;
+}
+
+int
+lt_new_post_callback(base_t *base, func_t callback, int fd, void *arg)//.*, flag_t flag)
+{
+	event_t *event = lt_new_event(base);
+    lt_ev_init_(event, LV_ONESHOT, fd,
             callback, arg, UNDELETED);
-    event_t *active_head_ev = base->activelist.head;
+/*    event_t *active_head_ev = base->activelist.head;
     if (active_head_ev) {
         active_head_ev->next_active_ev = ev;
         base->activelist.tail = ev;
     } else {
         base->activelist.head = ev;
         base->activelist.tail = ev;
-    }
-    ev->next_active_ev = NULL;
+    }*/
 
     return 0;
 }
@@ -91,6 +120,7 @@ base_t *
 lt_base_init(void)
 {
     base_t *base = malloc(sizeof(base_t));
+
     if (!base) {
         return NULL;
     }
@@ -102,11 +132,13 @@ lt_base_init(void)
     }
 
     base->epfd = epfd;
+    base->free_ev_head = malloc(sizeof(event_t));
+    base->free_ev_head->next = NULL;
     base->activelist.head = NULL;
     /*base->readylist.event_pool_manager = */
-    lt_new_memory_pool_manager(&base->readylist.event_pool_manager);
-    base->readylist.event_pool = 
-        lt_new_memory_pool(sizeof(event_t), &base->readylist.event_pool_manager, NULL);
+
+    lt_new_memory_pool_manager(&base->event_pool_manager,
+    		sizeof(event_t), EVENT_POOL_LENGTH);
 
     min_heap_constructor_(&base->timeheap);
 /*
@@ -124,8 +156,8 @@ event_t *
 lt_io_add(base_t *base, int   fd, flag_t flag_set,
        func_t callback, void *arg, to_t timeout)
 {
-    event_t *event = lt_add_to_readylist(&base->readylist, 
-            flag_set, fd, callback, arg);
+    event_t *event = lt_new_event(base);
+    lt_ev_init_(event, flag_set, fd, callback, arg, UNDELETED);
 	if (timeout >= 0) {
 		event->endtime = lt_timeout_add(base, event, timeout);//lt_timeout_add TODO
     } else {
@@ -183,19 +215,17 @@ lt_io_mod(base_t *base, event_t *ev, flag_t new_flag_set,//自行获取原有的
     return ev;
 }
 
-
 static void//res_t
 lt_ev_process_and_moveout(base_t *base, /*active_evlist_t *actlist,*/ lt_time_t nowtime)
 {
     active_evlist_t *actlist = &base->activelist;
-    ready_evlist_t *readylist = &base->readylist;
+    //ready_evlist_t *readylist = &base->readylist;
     for (event_t *event = actlist->head; 
             event; 
             event = event->next_active_ev) {//Why not use Tree?
 		if (lt_ev_check_timeout(event, nowtime)) {
             event->deleted = 1;
         } else if (event->deleted){ //cluster some event and del it;
-            lt_remove_from_readylist(event, readylist);//TODO?
 //            lt_io_remove(<#base_t *base#>, <#event_t *ev#>)
         } else {
             event->callback(event, event->arg);
@@ -356,14 +386,14 @@ lt_remove_from_epfd(int epfd, event_t *event, int mon_fd, flag_t flag)
 
     return res;
 }
-
+/*
 void//res_t
 lt_remove_from_readylist(event_t *ev, ready_evlist_t *readylist) 
 {
     lt_free(readylist->event_pool, ev);//no order
     readylist->event_len--;
 }
-
+*/
 void//res_t
 lt_io_remove(base_t *base, event_t *ev)//Position TODO
 {
@@ -371,8 +401,9 @@ lt_io_remove(base_t *base, event_t *ev)//Position TODO
         min_heap_erase_(&base->timeheap, ev);//First erase heap
     } 
 
-    lt_remove_from_readylist(ev, &base->readylist);
-    lt_remove_from_epfd(base->epfd, ev, ev->fd, 0);//For active event, it's different with Libevent. 
+ //   lt_remove_from_readylist(ev, &base->readylist);
+    lt_remove_from_epfd(base->epfd, ev, ev->fd, 0);//For active event, it's different with Libevent.
+
     ev->deleted = 1;//For active event, it's different with Libevent. 
 }
 

@@ -10,10 +10,9 @@
 //ssize_t pospone_send_buffer_chains_loop(int fd, lt_buffer_t *out_buf);
 int send_buffers(base_t *, int fd, lt_buffer_t *out_buf);
 
-lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
-        lt_memory_pool_t *manager, size_t size)
+lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_manager_t *manager, size_t size)
 {
-    lt_buffer_t *buf = lt_new_buffer(pool, manager);
+    lt_buffer_t *buf = lt_new_buffer(manager);
     if (buf == NULL) {
         return NULL;
     }
@@ -26,7 +25,7 @@ lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
         lt_buffer_t *new_buf;
 
         while (now < size) {
-            new_buf = lt_new_buffer(pool, manager);
+            new_buf = lt_new_buffer(manager);
             now += DEFAULT_BUF_SIZE;
             old_buf->next = new_buf;
             old_buf = new_buf;
@@ -37,10 +36,9 @@ lt_buffer_t *lt_new_buffer_chain(lt_memory_pool_t *pool,
     return buf;
 }
 
-lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool, 
-        lt_memory_pool_t *manager)
+lt_buffer_t *lt_new_buffer(lt_memory_pool_manager_t *manager)
 {
-    lt_buffer_t *buf = lt_alloc(pool, manager);
+    lt_buffer_t *buf = lt_alloc(manager);
     if (buf == NULL) {
         return NULL;
     }
@@ -49,7 +47,7 @@ lt_buffer_t *lt_new_buffer(lt_memory_pool_t *pool,
     buf->pos = buf->start;
     buf->last = buf->start;
 
-    buf->pool = pool;
+    buf->pool = manager;
     buf->next = NULL;
     buf->head = 0;
     buf->written = 0;
@@ -228,6 +226,7 @@ int send_buffers(base_t *base, int fd, lt_buffer_t *out_buf)
     }
 
     __builtin_unreachable();
+    return 0;
 }
 
 /*
@@ -305,7 +304,7 @@ lt_recv(int fd, lt_buffer_t *lt_buf)
             }
             
             if (n == length) { 
-                lt_buffer_t *new_buf = lt_new_buffer(lt_buf->pool, lt_buf->pool->manager);
+                lt_buffer_t *new_buf = lt_new_buffer(lt_buf->pool);
                 lt_buf->next = new_buf;
                 lt_buf = new_buf;
                 continue;

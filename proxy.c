@@ -15,8 +15,7 @@ int proxy_connect_writable(event_t *ev, void *arg)
     }
     if (err == 0) {
         conn->status = L_PROXY_CONNECTED;
-        conn->buf = lt_new_buffer_chain(conn->buf_pool, 
-                conn->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);
+        conn->buf = lt_new_buffer_chain(conn->buf_pool_manager, DEFAULT_UPSTREAM_BUFFER_SIZE);
 
         lt_set_keepalive(conn->fd, 1);
         //SUCCESS
@@ -97,12 +96,10 @@ int proxy_connect(http_t *http, connection_t *conn)
               conn->peer_addr_c, 
              &conn->peer_addr_in.sin_addr);
 //proxy connection initiazation
-    conn->pair = lt_alloc(http->listen.connection_pool, 
-            &http->listen.connection_pool_manager);
+    conn->pair = lt_alloc(&http->listen.connection_pool_manager);
     conn->pair->request_pool_manager = conn->request_pool_manager;
     conn->pair->buf_pool = conn->buf_pool;
     conn->pair->buf_pool_manager = conn->buf_pool_manager;
-    conn->pair->request_pool = conn->request_pool;
     conn->pair->request_pool_manager = conn->request_pool_manager;
         
     conn->pair->pair = conn;
@@ -139,7 +136,7 @@ int proxy_data_coming(event_t *ev, void *arg)
 {
     request_t *req;
     connection_t *conn = (connection_t *)arg;
-    conn->buf = lt_new_buffer_chain(conn->buf_pool, conn->buf_pool_manager, 
+    conn->buf = lt_new_buffer_chain(conn->buf_pool_manager,
             DEFAULT_UPSTREAM_BUFFER_SIZE);
     int rv = lt_recv(conn->fd, conn->buf);//nginx just recv a part
     if (rv == LAGAIN) {

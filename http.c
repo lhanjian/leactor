@@ -3,9 +3,6 @@
 
 static int get_addrinfo_with_bind(http_t *http);
 static int start_accept(event_t *ev, void *arg);
-//static int http_add_listen(http_t *http, conf_t *conf);
-//static int http_bind_listenfd_with_handle(http_t *http, conf_t *conf);
-//static int http_accept_distributor(event_t *ev, void* http);
 static int http_add_listen(http_t *http, conf_t *conf);
 int http_process_host(request_t *, lt_string_t * /*, 28*/);
 
@@ -32,57 +29,6 @@ int http_find_host(request_t *req)
 {
     return LOK;
 }
-/*
-http_t *http_master_new(base_t *base, conf_t *conf)
-{
-    http_t *http = calloc(1, sizeof(http_t));
-    if (!http) {
-        perror("malloc http");
-        return NULL;
-    }
-    http->base = base;
-    http->listen.bind_addr = "127.0.0.1";//ALL available localaddr 
-//TODO:sustitute with JSON conf file
-    http->listen.bind_port = "8080";//same to UP
-
-    int rv = http_add_listen(http, conf);
-    if (rv) {
-        free(http);
-        return NULL;
-    }
-
-    http->efd = conf->efd_distributor;
-
-    http->listen.ev = lt_io_add(http->base, http->listen.fd, 
-            LV_CONN|LV_FDRD, http_accept_distributor,
-            http, NO_TIMEOUT);
-    return http;
-}
-*/
-/*
-int send_to_child(int evfd)
-{
-    return rv;
-}
-*/
-/*
-int http_accept_distributor(event_t *ev, void *arg)
-{
-    http_t *http = (http_t *)arg;
-//    http->core_amount = 1;
-    static unsigned long seq_count = 0;
-    uint64_t count = 1;
-    int rv = write(http->efd, &count, sizeof(count));
-    if (rv != sizeof(count)) {
-        perror("eventfd write failed");
-        return -1;
-    }
-    
-    seq_count++;
-
-    return 0;
-}
-*/
 
 int get_addrinfo_with_bind(http_t *http)
 {
@@ -113,27 +59,6 @@ int get_addrinfo_with_bind(http_t *http)
         lt_set_reuseaddr(listen_sock, 1);
         lt_set_reuseport(listen_sock, 1);
 //        lt_set_keepalive(listen_sock, 1);
-        /*
-        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1) {
-            perror("setsockopt_REUSE_ADDR");
-            return -1;
-        }
-
-        if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof yes) == -1) {
-            perror("setsockopt_REUSE_PORT");
-            return -1;
-        }
-
-        if (setsockopt(listen_sock, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof yes) == -1) {
-            perror("setsockopt_KEEPALIVE");
-            return -1;
-        }
-        */
-
-/*        if (setsockopt(listen_sock, SOL_SOCKET, TCP_, &yes, sizeof yes) == -1) {
-            perror("setsockopt_KEEPALIVE");
-            return -1;
-        }*/
 
         if (bind(listen_sock, p->ai_addr, p->ai_addrlen) == -1) {
             close(listen_sock);
@@ -141,7 +66,6 @@ int get_addrinfo_with_bind(http_t *http)
             continue;
         }
         http->listen.saddr = *p->ai_addr;
-//        ignore_sigpipe();
         break;
     }
 
@@ -153,17 +77,6 @@ int get_addrinfo_with_bind(http_t *http)
     freeaddrinfo(res);
     return 0;
 }
-/*
-int send_listenfd_to_child(int pfd[2], int fd)
-{
-    close(pfd[0]);
-    write(pfd[1], &fd, sizeof(fd));
-//    ioctl(pfd[1], I_SENDFD, *fd);
-    close(pfd[1]);
-
-    return 0;
-}
-*/
 
 int http_add_listen(http_t *http, conf_t *conf)
 {
@@ -176,8 +89,6 @@ int http_add_listen(http_t *http, conf_t *conf)
         return -1;
     }
 
-//    conf->listen_fd = http->listen.fd;
-
     rv = listen(http->listen.fd, SOMAXCONN);
     if (rv) {
         fprintf(stderr, "listen error");
@@ -189,16 +100,6 @@ int http_add_listen(http_t *http, conf_t *conf)
 
     return 0;
 }
-/*
-void recv_listenfd_to_child(int pfd[2], int *fd)
-{
-    close(pfd[1]);
-    read(pfd[0], fd, sizeof(int));
-    close(pfd[0]);
-}
-*/
-
-//int set_http_data_coming_timeout();
 
 request_t *http_create_request(connection_t *conn)
 {
@@ -208,7 +109,7 @@ request_t *http_create_request(connection_t *conn)
         req = conn->request_free_head;
         conn->request_free_head = req->next;
     } else {
-        req = lt_alloc(conn->request_pool, &conn->request_pool_manager);
+        req = lt_alloc(&conn->request_pool_manager);
     }
 
     req->conn = conn;
@@ -216,20 +117,10 @@ request_t *http_create_request(connection_t *conn)
     req->state = 0;
 
     lt_new_memory_pool_manager(&req->header_pool_manager);
-    req->header_pool = lt_new_memory_pool(sizeof(lt_http_header_element_t), 
-                                              &req->header_pool_manager, NULL);
+
     return req;
 }
-/*
-int http_read_request_header(request_t *req)
-{
-    ssize_t n = req->header_in->last - req->header_in->pos;
-    if (n > 0) {
-        return n;
-    }
 
-}
-*/
 int http_status_line_parsed(request_t *req, int rv)
 {
     return 0;
@@ -301,13 +192,9 @@ void lowcase_key_copy_from_origin(struct string *low, struct string *origin)
 
 int http_process_element(request_t *req, lt_http_header_element_t *element)
 {            
-//    int field = -1;
     enum {
         fl_host = 0
     };
-/*//hashed in request_header_parse
-    unsigned hash = BKDRhash(element->lowcase_key.data, element->lowcase_key.length);
-    */
 
     element->length = req->header_length;
 
@@ -317,7 +204,7 @@ int http_process_element(request_t *req, lt_http_header_element_t *element)
             return LERROR;
         }
     }
-//  if (hash == ContentLengthHash) {
+//  if (hash == ContentLengthHash) {//TODO
 //  //for HTTP POST
 //  }
 //
@@ -353,7 +240,7 @@ int http_process_request_headers(connection_t *conn, void *arg)
                 continue;
             }
             lt_http_header_element_t *header_element = 
-                lt_alloc(req->header_pool, &req->header_pool_manager);
+                lt_alloc(&req->header_pool_manager);
 
             if (req->element_head == NULL) {
                 req->element_head = header_element;
@@ -416,7 +303,6 @@ int http_process_response_line(connection_t *conn, void *arg)
         if (rc == LOK) {
             return http_send_to_client(conn, req);
         }
-        //req->request_line.length = 
         //HTTP_VERSION:TODO
 
     }
@@ -426,7 +312,7 @@ int http_process_response_line(connection_t *conn, void *arg)
 
 int http_finish_request(connection_t *conn, request_t *req)
 {
-    lt_destroy_memory_pool(req->header_pool ,&req->header_pool_manager);
+    lt_destroy_memory_pool(&req->header_pool_manager);
 
     req->next = NULL;
     if (conn->request_free_tail) {
@@ -443,24 +329,18 @@ int http_finish_request(connection_t *conn, request_t *req)
 int http_process_request_line(connection_t *conn, void *arg)
 {
     request_t *req = (request_t *)arg;
-
 //    http_read_request_header(r);
     int rv = ngx_http_parse_request_line(req, req->header_in);
 
     if (rv == LOK) {
         //HTTP_VERSION:TODO
         http_request_line_parsed(req, rv);
-/*      event->callback = http_process_request_headers;
-        event->arg = req; */
-/*        conn->handler = http_process_request_headers;
-        conn->handler_arg = req;*/
 
         rv = http_process_request_headers(conn, req);
         if (rv == LOK) {
             lt_chain_t *send_chain = http_construct_request_chains(req);
             req->out_chain = send_chain;
             rv = http_send_to_upstream(req);
-            //proxy_send_to_upstream(conn, req);
         }
 
         return http_process_request_line(conn, arg);
@@ -476,19 +356,16 @@ int http_data_coming(event_t *ev, void *arg)
     if (conn->timeout && conn->close) {
         //http_close_connecting
     }
-//    conn->buf = //lt_alloc(conn->buf_pool, conn->buf_pool_manager);//conn->buf;//?conn->buf:NULL;
-    conn->buf = lt_new_buffer_chain(conn->buf_pool, //when to release TODO
-            conn->buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
+
+    conn->buf = lt_new_buffer_chain(//when to release TODO
+            &conn->buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
     //TODO:pipeline Coming
-/*    if (conn->buf) {
-        buf = conn->buf;
-    } else {
-    }*/
+
     int rv = lt_recv(conn->fd, conn->buf);
     if (rv == LAGAIN) {
 //        set_http_data_coming_timer();
 //        conn->status = EFAULT;
-        //push back lt_buffer to pool
+        //push back lt_buffer to pool TODO
 //        return 0;
 //
     } else if (rv == LCLOSE) {
@@ -502,9 +379,8 @@ int http_data_coming(event_t *ev, void *arg)
         request_t *req = http_create_request(conn);
         http_process_request_line(conn, req);
 
-        //proxy_send_to_upstream(conn, req);//NEXT
-/*        conn->handler = http_process_request_line;
-        conn->handler_arg = req;*/
+        //proxy_send_to_upstream(conn, req);//NEXT upstream
+
         return 0;
     } 
     
@@ -521,23 +397,16 @@ int http_data_coming(event_t *ev, void *arg)
 connection_t *
 http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
 {
-    connection_t *conn = lt_alloc(http->listen.connection_pool, 
-            &http->listen.connection_pool_manager);
+    connection_t *conn = lt_alloc(&http->listen.connection_pool_manager);
 
     conn->fd = fd;
 
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
 
-   /* conn->buf = lt_new_buffer_chain(http->listen.buf_pool, //when to release TODO
-            &http->listen.buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);*/
-
     conn->buf_pool_manager = &http->listen.buf_pool_manager;
-    conn->buf_pool = http->listen.buf_pool;
     conn->status = L_CONNECTING_ACCEPTED;
 
     lt_new_memory_pool_manager(&conn->request_pool_manager);
-    conn->request_pool = lt_new_memory_pool(sizeof(request_t), 
-            &conn->request_pool_manager, NULL);
 
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
             http_data_coming, conn, NO_TIMEOUT);
@@ -545,8 +414,7 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->peer_addr_c = proxy_get_upstream_addr();
     int rv = proxy_connect(http, conn);//pair connection
     if (rv == LERROR) {//TODO
-        lt_free(http->listen.buf_pool, conn->buf);
-        lt_free(http->listen.connection_pool, conn);
+    	//proxy_next
         return NULL;
     }
     //add_timer
@@ -582,18 +450,12 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
         return NULL;
     }
 
-    lt_new_memory_pool_manager(&http->listen.connection_pool_manager);
-
-    http->listen.connection_pool = lt_new_memory_pool(sizeof(connection_t), 
-                                    &http->listen.connection_pool_manager, NULL);
+    lt_new_memory_pool_manager(&http->listen.connection_pool_manager,
+    		sizeof(connection_t), CONNECTION_POOL_LENGTH);
 
     HostHash = BKDRhash("Host", sizeof("Host"));
 
     http->base = base;
-//    http->listen.fd = conf->listen_fd;
-//    http->listen.ev = lt_io_add(base, conf->efd_distributor, LV_FDRD|LV_CONN, 
-//            start_accept, http, NO_TIMEOUT);
-    
 
     int rv = http_add_listen(http, conf);
     if (rv) {
@@ -607,32 +469,17 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
         return NULL;
     }
 
-    lt_new_memory_pool_manager(&http->listen.buf_pool_manager);
-    http->listen.buf_pool = lt_new_memory_pool(sizeof(lt_buffer_t),
-            &http->listen.buf_pool_manager, NULL);
+    lt_new_memory_pool_manager(&http->listen.buf_pool_manager ,
+    		sizeof(lt_buffer_t), BUFFER_POOL_LENGTH);
     return http;
 }
 
 lt_chain_t *construct_response_chains(request_t *rep)
 {
 //    int chain_len = 0;
-    lt_new_memory_pool_manager(&rep->chain_pool_manager);
-    rep->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &rep->chain_pool_manager, NULL);
-/*
-    lt_chain_t *http_version = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
-    http_version->buf.iov_base = rep->http_protocol.data;
-    http_version->buf.iov_len = rep->http_protocol.length + 1;//' '
-    chain_len++;
+    lt_new_memory_pool_manager(&rep->chain_pool_manager, sizeof(lt_chain_t), CHAIN_POOL_LENGTH);
 
-    lt_chain_t *status_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
-    http_version->next = status_chain;
-    status_chain->buf.iov_base = rep->status.start;//OPTIM TODO: struct iovec 和 string 类似
-    status_chain->buf.iov_len = rep->status.count;
-    chain_len++;
-    
-    lt_chain_t *
-*/
-    lt_chain_t *status_line = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    lt_chain_t *status_line = lt_alloc(&rep->chain_pool_manager);
     status_line->buf.iov_base = rep->request_line.data;
     status_line->buf.iov_len = rep->request_line.length + 2;
 
@@ -641,43 +488,26 @@ lt_chain_t *construct_response_chains(request_t *rep)
     lt_chain_t *out_chain = status_line;
     lt_http_header_element_t *element = rep->element_head;
 
-    lt_chain_t *cur_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+    lt_chain_t *cur_chain = lt_alloc(&rep->chain_pool_manager);
     out_chain->next = cur_chain;
     for (;;) {
         cur_chain->buf.iov_base = element->key.data;
         cur_chain->buf.iov_len = element->key.length + 2;
         chain++;
 
-        cur_chain->next = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+        cur_chain->next = lt_alloc(&rep->chain_pool_manager);
         cur_chain->next->buf.iov_base = element->value.data;
         cur_chain->next->buf.iov_len = element->value.length + 2;
         chain++;
 
         if (element == rep->element_tail) {
             cur_chain->next->buf.iov_len += 2;
-            /*
-            lt_chain_t *tail_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
-            cur_chain->next->next = tail_chain;
-            tail_chain->buf.iov_base = rep->header_end + 2;
-            tail_chain->buf.iov_len = rep->header_in->last - (rep->header_end + 2);
-            chain++;
-            tail_chain->next = NULL;
-            */ 
-            /*
-            for (lt_buffer_t *buf = rep->header_in->next;
-                    buf;
-                    tail_chain = tail_chain->next, buf = buf->next) {//body
-                tail_chain->next = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
-                tail_chain->next->buf.iov_base = buf->pos;
-                tail_chain->next->buf.iov_len = buf->last - buf->pos;
-                chain++;
-            }
-            */
+
             goto done;
 
         }
         element = element->next;
-        lt_chain_t *new_chain = lt_alloc(rep->chain_pool, &rep->chain_pool_manager);
+        lt_chain_t *new_chain = lt_alloc(&rep->chain_pool_manager);
 
         cur_chain->next->next = new_chain;
         cur_chain = new_chain;
@@ -686,14 +516,7 @@ done:
     out_chain->chain_len = chain;
     return out_chain;
 }
-/*
-int http_send_body_to_client(event_t *ev, void *arg)
-{
-    request_t *req = (request_t *)arg;
-    connection_t *conn = ev->arg;
-    return 0;
-}
-*/
+
 int http_send_to_client(connection_t *conn, request_t *req)
 {
     lt_chain_t *out_chain = construct_response_chains(req);
@@ -723,14 +546,13 @@ int http_send_to_client(connection_t *conn, request_t *req)
 
 int destructor_chains(request_t *req, lt_chain_t *chain)
 {
-    lt_destroy_memory_pool(req->chain_pool, &req->chain_pool_manager);
+	lt_destroy_memory_pool(&req->chain_pool_manager);
     return 0;
 }
 
 lt_chain_t *http_construct_request_chains(request_t *req)
 {
-    lt_new_memory_pool_manager(&req->chain_pool_manager);
-    req->chain_pool = lt_new_memory_pool(sizeof(lt_chain_t), &req->chain_pool_manager, NULL);
+    lt_new_memory_pool_manager(&req->chain_pool_manager, sizeof(lt_chain_t), CHAIN_POOL_LENGTH);
 /*
     lt_chain_t *chain_request_line = lt_alloc(req->chain_pool, &req->chain_pool_manager);
     chain_request_line->buf.iov_base = req->request_start;
@@ -740,26 +562,22 @@ lt_chain_t *http_construct_request_chains(request_t *req)
 
     int chain_len = 0;
 //TODO 合并本就在连续地址上的chain
-    lt_chain_t *method_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    lt_chain_t *method_chain = lt_alloc(&req->chain_pool_manager);
     method_chain->buf.iov_base = req->method_name.data;//method
     method_chain->buf.iov_len = req->method_name.length + 1;//" "
     chain_len++;
-    //chain_request_line->next = method_chain;
-    ////chain_request_header_field;
-    //chain_request_header_field;
 
-    lt_chain_t *chain_uri = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    lt_chain_t *chain_uri = lt_alloc(&req->chain_pool_manager);
     method_chain->next = chain_uri;
     chain_uri->buf.iov_base = req->uri.data;//uri
     chain_uri->buf.iov_len = req->uri.length + 1;//" "
     chain_len++;
 
-    lt_chain_t *http_version = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    lt_chain_t *http_version = lt_alloc(&req->chain_pool_manager);
     chain_uri->next = http_version;
     http_version->buf.iov_base = req->http_protocol.data;
     http_version->buf.iov_len = req->http_protocol.length + 2;//"\r\n"
     chain_len++;
-
 
     lt_chain_t *new_chain;
 
@@ -769,20 +587,16 @@ lt_chain_t *http_construct_request_chains(request_t *req)
         goto done;
     }
 
-    lt_chain_t *chain_request_header_field = lt_alloc(req->chain_pool, &req->chain_pool_manager);
+    lt_chain_t *chain_request_header_field = lt_alloc(&req->chain_pool_manager);
     http_version->next = chain_request_header_field;
     for (;;) {
-        //insert(old_chain, &chain_request_header_field, element);
-        //old_chain->next = insertion_chain; //old后插
-        //element->value/key //修改element
-        //insertion_chain->next = chain_request_header_field; //chain前插
 
         chain_request_header_field->buf.iov_base = element->key.data;
         chain_request_header_field->buf.iov_len = element->key.length + 2;
         chain_len++;
-//        chain_request_header_field->next = NULL;
+
         chain_request_header_field->next = 
-            lt_alloc(req->chain_pool, &req->chain_pool_manager);
+            lt_alloc(&req->chain_pool_manager);
         chain_request_header_field->next->buf.iov_base = element->value.data;
         chain_request_header_field->next->buf.iov_len = element->value.length + 2;
         chain_len++;
@@ -793,8 +607,8 @@ lt_chain_t *http_construct_request_chains(request_t *req)
         }
 
         element = element->next;
-        new_chain = lt_alloc(req->chain_pool, &req->chain_pool_manager);
-        //old_chain = chain_request_header_field;
+        new_chain = lt_alloc(&req->chain_pool_manager);
+
         chain_request_header_field->next->next = new_chain;
         chain_request_header_field = new_chain;
     }

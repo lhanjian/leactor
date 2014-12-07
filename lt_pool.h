@@ -3,21 +3,12 @@
 #define alignment_ptr(p, a) \
 	(uintptr_t)(((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
 
-typedef struct lt_memory_pool {
-	uintptr_t start, end;
-	uintptr_t pos;
+lt_memory_pool_manager_t *
+lt_new_memory_pool_manager(lt_memory_pool_manager_t *manager,
+		size_t one_element_size, size_t element_count);
 
-	struct lt_memory_pool *next;
-	struct lt_memory_pool_manager *manager;
-} lt_memory_pool_t;
+lt_memory_pool_t *lt_new_memory_pool(lt_memory_pool_manager_t *manager);
 
-typedef struct lt_memory_pool_manager {
-	lt_memory_pool_t *cur;
-	size_t one_element_size;
-	size_t element_count;
-	struct lt_memory_pool *head;
-	struct lt_memory_pool *tail;
-	struct lt_memory_pool_manager *heterogeneous_next;
-} lt_memory_pool_manager_t;
-
+void
+lt_destroy_memory_pool(lt_memory_pool_manager_t *manager);
 
