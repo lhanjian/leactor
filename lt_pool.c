@@ -6,7 +6,7 @@ lt_new_memory_pool_manager(lt_memory_pool_manager_t *manager, size_t
 		one_element_size, size_t element_count)
 {
 	if (!manager) {
-		manager = malloc(sizeof(lt_memory_pool_manager_t));
+		manager = calloc(1, sizeof(lt_memory_pool_manager_t));
 	}
 	manager->one_element_size = one_element_size;
 	manager->element_count = element_count;
@@ -54,9 +54,11 @@ lt_new_memory_pool(lt_memory_pool_manager_t *manager)
 	mem->next = NULL;
 	mem->manager = manager;
 
-	manager->cur = mem;
-	manager->tail->next = mem;
-	manager->tail = mem;
+	if (manager) {
+		manager->cur = mem;
+		manager->tail->next = mem;
+		manager->tail = mem;
+	}
 
 	return mem;
 }
