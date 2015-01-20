@@ -358,7 +358,7 @@ int http_data_coming(event_t *ev, void *arg)
     }
 
     conn->buf = lt_new_buffer_chain(//when to release TODO
-            &conn->buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
+            conn->buf_pool_manager, DEFAULT_HEADER_BUFFER_SIZE);
     //TODO:pipeline Coming
 
     int rv = lt_recv(conn->fd, conn->buf);

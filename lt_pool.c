@@ -10,7 +10,9 @@ lt_new_memory_pool_manager(lt_memory_pool_manager_t *manager, size_t
 	}
 	manager->one_element_size = one_element_size;
 	manager->element_count = element_count;
-	manager->head = manager->tail = manager->cur = lt_new_memory_pool(manager);
+	manager->cur = lt_new_memory_pool(manager);
+	manager->tail = manager->cur;
+	manager->head = manager->cur;
 
 	return manager;
 }
@@ -54,11 +56,13 @@ lt_new_memory_pool(lt_memory_pool_manager_t *manager)
 	mem->next = NULL;
 	mem->manager = manager;
 
-	if (manager) {
-		manager->cur = mem;
+
+
+	if (manager->cur) {
 		manager->tail->next = mem;
-		manager->tail = mem;
 	}
+	manager->cur = mem;
+	manager->tail = mem;
 
 	return mem;
 }

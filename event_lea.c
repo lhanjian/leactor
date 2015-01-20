@@ -66,7 +66,7 @@ lt_new_event(base_t *base)
 		free_ev->prev->next = free_ev->next;
 		free_ev->next->prev = free_ev->prev;
 	} else {
-		ev = lt_alloc(base->event_pool_manager);
+		ev = lt_alloc(&base->event_pool_manager);
 	}
 
 	return ev;
