@@ -236,3 +236,4 @@ struct lt_string {
 };
 #endif
 
+#include "lt_pool.h"

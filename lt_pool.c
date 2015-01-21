@@ -33,7 +33,7 @@ lt_alloc(lt_memory_pool_manager_t *manager)
 	new_space = cur->pos;
 	cur->pos = alignment_ptr(cur->pos, sizeof(uintptr_t)) + element_size;
 
-	return new_space;
+	return (void *)new_space;
 }
 
 lt_memory_pool_t *

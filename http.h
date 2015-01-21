@@ -54,8 +54,8 @@ typedef struct conf {
     base_t *base;
 } conf_t;
 
-struct upstream {
-} upstream_t;
+/*struct upstream {
+} upstream_t;*/
 
 typedef struct status {
     int http_version;
@@ -121,9 +121,9 @@ typedef struct request {
     struct upstream *upstream;//http_parse
     struct status status;//http_parse
 
-    struct lt_memory_pool  header_pool_manager;
+    struct lt_memory_pool_manager  header_pool_manager;
 
-    struct lt_memory_pool  chain_pool_manager;
+    struct lt_memory_pool_manager  chain_pool_manager;
 
     struct connection *conn;
     lt_chain_t *out_chain;
@@ -148,17 +148,17 @@ typedef struct connection {
     struct event *ev;
     struct event *proxy_ev;
 
-    struct lt_memory_pool header_pool_manager;
+    struct lt_memory_pool_manager header_pool_manager;
 
-    struct lt_memory_pool request_pool_manager;
+    struct lt_memory_pool_manager request_pool_manager;
     struct request *request_free_head;
     struct request *request_free_tail;
 
     lt_buffer_t *buf;
     lt_buffer_t *proxy_buf;
 
-    struct lt_memory_pool *buf_pool;//copy from proxy_t/listen_t
-    struct lt_memory_pool *buf_pool_manager;//copy from proxy_t/listen_t
+    struct lt_memory_pool_manager *buf_pool;//copy from proxy_t/listen_t
+    struct lt_memory_pool_manager *buf_pool_manager;//copy from proxy_t/listen_t
 
     int status;
 //    int proxy_status;
@@ -186,7 +186,7 @@ typedef struct listening {
     struct lt_memory_pool_manager connection_pool_manager;
     struct connection listen_conn;
     struct connection *client_list;
-    struct connection *downstream_list;;
+    struct connection *downstream_list;
     struct event *ev;
 
     struct lt_memory_pool_manager buf_pool_manager;

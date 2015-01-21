@@ -116,7 +116,7 @@ request_t *http_create_request(connection_t *conn)
     req->header_in = conn->buf;
     req->state = 0;
 
-    lt_new_memory_pool_manager(&req->header_pool_manager);
+    lt_new_memory_pool_manager(&req->header_pool_manager, sizeof(struct http_header_element), 8);
 
     return req;
 }
@@ -406,7 +406,8 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     conn->buf_pool_manager = &http->listen.buf_pool_manager;
     conn->status = L_CONNECTING_ACCEPTED;
 
-    lt_new_memory_pool_manager(&conn->request_pool_manager);
+    lt_new_memory_pool_manager(&conn->request_pool_manager,
+    		sizeof (request_t), 4);
 
     conn->ev = lt_io_add(http->base, fd, LV_FDRD|LV_CONN/*|LV_LAG*/, 
             http_data_coming, conn, NO_TIMEOUT);
@@ -477,7 +478,8 @@ http_t *http_worker_new(base_t *base, conf_t *conf)
 lt_chain_t *construct_response_chains(request_t *rep)
 {
 //    int chain_len = 0;
-    lt_new_memory_pool_manager(&rep->chain_pool_manager, sizeof(lt_chain_t), CHAIN_POOL_LENGTH);
+    lt_new_memory_pool_manager(&rep->chain_pool_manager,
+    		sizeof(lt_chain_t), CHAIN_POOL_LENGTH);
 
     lt_chain_t *status_line = lt_alloc(&rep->chain_pool_manager);
     status_line->buf.iov_base = rep->request_line.data;
@@ -522,7 +524,7 @@ int http_send_to_client(connection_t *conn, request_t *req)
     lt_chain_t *out_chain = construct_response_chains(req);
 
     connection_t *client_conn = conn->pair;
-    
+
     int rv = send_chains(conn->ev->base, client_conn->fd, &out_chain);
     switch (rv) {
         case LOK:
