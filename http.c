@@ -303,8 +303,7 @@ int http_process_response_line(connection_t *conn, void *arg)
         if (rc == LOK) {
             return http_send_to_client(conn, req);
         }
-        //HTTP_VERSION:TODO
-
+        //HTTP_VERSION:T
     }
 
     return 0;
