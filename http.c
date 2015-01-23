@@ -116,7 +116,8 @@ request_t *http_create_request(connection_t *conn)
     req->header_in = conn->buf;
     req->state = 0;
 
-    lt_new_memory_pool_manager(&req->header_pool_manager, sizeof(struct http_header_element), 8);
+    lt_new_memory_pool_manager(&req->header_pool_manager,
+    		sizeof(struct http_header_element), DEFAULT_HEADER_ELEMENT_COUNT);
 
     return req;
 }
@@ -155,7 +156,7 @@ int http_request_line_parsed(request_t *req, int rv)
     req->unparsed_uri.length = req->uri_end - req->uri_start;
     req->unparsed_uri.data = req->uri_start;
 
-    req->valid_unparsed_uri = req->space_in_uri ? 0 : 1;
+    req->valid_unparsed_uri = req->space_in_uri ? 0 : 1;16
 
     if (req->uri_ext) {
         //TODO

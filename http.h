@@ -22,6 +22,7 @@
 #define CHAIN_POOL_LENGTH (32)
 #define CONNECTION_POOL_LENGTH (32)
 #define BUFFER_POOL_LENGTH (64)
+#define DEFAULT_HEADER_ELEMENT_COUNT (16)
 
 typedef struct string {
     int length;
