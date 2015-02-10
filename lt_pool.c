@@ -10,6 +10,7 @@ lt_new_memory_pool_manager(lt_memory_pool_manager_t *manager, size_t
 	}
 	manager->one_element_size = one_element_size;
 	manager->element_count = element_count;
+	manager->cur = NULL;
 	manager->cur = lt_new_memory_pool(manager);
 	manager->tail = manager->cur;
 	manager->head = manager->cur;
@@ -24,14 +25,15 @@ lt_alloc(lt_memory_pool_manager_t *manager)
 	lt_memory_pool_t *cur = manager->tail;
 	size_t element_size = manager->one_element_size;
 
-	if (cur->pos > cur->end) {
-		lt_memory_pool_t *new_pool = lt_new_memory_pool(manager);
-		cur->next = new_pool;
-		cur = new_pool;
-	}
-
 	new_space = cur->pos;
-	cur->pos = alignment_ptr(cur->pos, sizeof(uintptr_t)) + element_size;
+	cur->pos = alignment_ptr(cur->pos + element_size, sizeof(uintptr_t));
+
+	if (cur->pos > cur->end) {
+		/*lt_memory_pool_t *new_pool = */
+		lt_new_memory_pool(manager);
+		//cur->next = new_pool;
+		//cur = new_pool;
+	}
 
 	return (void *)new_space;
 }
@@ -44,27 +46,29 @@ lt_new_memory_pool(lt_memory_pool_manager_t *manager)
 			sizeof(lt_memory_pool_manager_t)
 			+ manager->element_count * element_size;
 
-	lt_memory_pool_t *mem = aligned_alloc(ALIGNMENT, size_of_pool_struct_and_all_elements);
-	if (mem == NULL) {
+	lt_memory_pool_t *pool = aligned_alloc(ALIGNMENT, size_of_pool_struct_and_all_elements);
+	if (pool == NULL) {
 		perror("aligned_alloc: ");
 		return NULL;
 	}
-
-	mem->start = (uintptr_t) mem + sizeof(lt_memory_pool_t);
-	mem->pos = alignment_ptr(mem->start, sizeof(uintptr_t)) + element_size;
-	mem->end = (uintptr_t) mem + size_of_pool_struct_and_all_elements;
-	mem->next = NULL;
-	mem->manager = manager;
+// mem { lt_memory_pool_t + user_data + user_data + .... + user_data  }
+	pool->start = (uintptr_t) pool /*+ sizeof(lt_memory_pool_t)*/;
+	pool->pos = alignment_ptr(
+			pool->start + sizeof(lt_memory_pool_t),
+			sizeof(uintptr_t))/*+ element_size*/;
+	pool->end = (uintptr_t) pool + size_of_pool_struct_and_all_elements;
+	pool->next = NULL;
+	pool->manager = manager;
 
 
 
 	if (manager->cur) {
-		manager->tail->next = mem;
+		manager->tail->next = pool;
 	}
-	manager->cur = mem;
-	manager->tail = mem;
+	manager->cur = pool;
+	manager->tail = pool;
 
-	return mem;
+	return pool;
 }
 
 void

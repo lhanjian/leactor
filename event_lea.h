@@ -62,7 +62,7 @@ int accept4(int, struct sockaddr *, socklen_t *, int flags);
 #define UNDELETED (0)
 
 typedef struct lt_buffer {
-    char start[DEFAULT_BUF_SIZE];
+    char start[DEFAULT_BUF_SIZE/*except other field memory*/];
     char *pos;
     char *last;
     char *end;

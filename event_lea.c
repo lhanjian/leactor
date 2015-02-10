@@ -463,7 +463,7 @@ lt_ignore_sigpipe()
     struct sigaction sa;
     sa.sa_handler = SIG_IGN;
     sa.sa_flags = 0;
-    if (sigaction(SIGPIPE, &sa, 0) == -1) {
+    if (sigaction(SIGPIPE, &sa, NULL) == -1) {
         perror("sigaction SIGPIPE:");
         return -1;
     }
