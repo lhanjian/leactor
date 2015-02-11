@@ -400,9 +400,9 @@ http_init_connection(http_t *http, int fd, struct sockaddr peer_addr)
     connection_t *conn = lt_alloc(&http->listen.connection_pool_manager);
 
     conn->fd = fd;
-
+	conn->request_free_head = NULL;
     memcpy(&conn->peer_addr, &peer_addr, sizeof(struct sockaddr));
-
+	
     conn->buf_pool_manager = &http->listen.buf_pool_manager;
     conn->status = L_CONNECTING_ACCEPTED;
 
